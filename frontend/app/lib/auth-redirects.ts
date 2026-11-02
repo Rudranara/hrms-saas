@@ -3,7 +3,7 @@ import type { CurrentUser } from "./auth-types";
 
 // Preserve only actual platform routes; never accept origins, queries or fragments.
 export function platformReturn(value: string | null): string | null {
-  return value && /^\/super-admin(?:\/settings|\/admins|\/organizations\/[a-zA-Z0-9_-]{1,100})?$/.test(value) ? value : null;
+  return value && /^\/super-admin(?:\/settings|\/admins|\/refunds|\/organizations\/[a-zA-Z0-9_-]{1,100})?$/.test(value) ? value : null;
 }
 export function platformLoginHref(destination: string) {
   return `/super-admin/login?${new URLSearchParams({ next: platformReturn(destination) || "/super-admin", reason: "session-ended" })}`;

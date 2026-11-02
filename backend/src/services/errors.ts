@@ -3,6 +3,8 @@ export class ServiceError extends Error {
     public code: string,
     public status: number,
     message: string,
+    public retryAfterMs?: number,
+    public rateLimitScope?: "payment" | "global",
   ) {
     super(message);
   }

@@ -308,8 +308,94 @@ model BillingPayment {
   amountRefundedMinor Int @default(0)
   updatedAt         DateTime @default(now()) @updatedAt
   createdAt         DateTime     @default(now())
+  refundRequests RefundRequest[]
+  refunds RefundTransaction[]
+  discoveryRetry RefundDiscoveryRetry?
 
   @@index([subscriptionId, createdAt])
+}
+
+// Singleton discovery checkpoint/lease; retries have an independent durable queue.
+model RefundDiscoveryScan {
+  id String @id @db.VarChar(40)
+  cursor String? @db.VarChar(191)
+  upperBound String? @db.VarChar(191)
+  leaseOwner String? @db.Char(36)
+  leaseUntil DateTime?
+  pausedUntil DateTime?
+  rateLimitAttempts Int @default(0)
+}
+
+model RefundDiscoveryRetry {
+  paymentId String @id
+  payment BillingPayment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  attempts Int @default(0)
+  nextAttemptAt DateTime
+  failureCode String @db.VarChar(80)
+  @@index([nextAttemptAt, paymentId])
+}
+
+model RefundRequest {
+  id String @id @default(cuid())
+  organizationId String
+  organizationName String @db.VarChar(191)
+  paymentId String
+  payment BillingPayment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  activePaymentId String? @unique
+  requestedBy String
+  submissionKey String @unique @db.Char(36)
+  reason String @db.VarChar(1000)
+  status String @default("PENDING") @db.VarChar(24)
+  requestedAmountMinor Int
+  approvedAmountMinor Int?
+  decisionKey String? @unique @db.Char(36)
+  decisionBy String?
+  decisionName String? @db.VarChar(191)
+  rejectionReason String? @db.VarChar(1000)
+  decidedAt DateTime?
+  version Int @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  transaction RefundTransaction?
+  audit RefundAuditEvent[]
+  @@index([organizationId, createdAt])
+  @@index([status, createdAt])
+}
+
+model RefundTransaction {
+  id String @id @default(cuid())
+  requestId String? @unique
+  request RefundRequest? @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  paymentId String
+  payment BillingPayment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  providerRefundId String? @unique @db.VarChar(100)
+  receipt String @unique @db.VarChar(40)
+  idempotencyKey String @unique @db.VarChar(64)
+  amountMinor Int
+  currency String @db.Char(3)
+  status String @default("PREPARED") @db.VarChar(24)
+  providerStatus String? @db.VarChar(24)
+  failureCode String? @db.VarChar(80)
+  providerCreatedAt DateTime?
+  verifiedAt DateTime?
+  processedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([status, updatedAt])
+  @@index([paymentId, createdAt])
+}
+
+model RefundAuditEvent {
+  id String @id @default(cuid())
+  requestId String
+  request RefundRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  actorId String?
+  actorName String? @db.VarChar(191)
+  action String @db.VarChar(40)
+  amountMinor Int?
+  detail String? @db.VarChar(1000)
+  createdAt DateTime @default(now())
+  @@index([requestId, createdAt])
 }
 
 // One operation per old subscription; organization row locking serializes operations.

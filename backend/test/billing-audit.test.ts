@@ -52,8 +52,8 @@ class FakeProvider implements PaymentProvider {
 }
 async function quote(index = 0) { return service.quote(org, planIds[index]!, index ? "yearly" : "monthly"); }
 async function checkout() { return service.checkoutQuote(org, (await quote()).id); }
-async function resetToTrial() {
-  await db.organization.update({ where: { id: org }, data: { accessMode: "CONTROLLED", accessVersion: { increment: 1 }, trialEnabled: true, subscriptionEnabled: false, trialStartedAt: now, trialExpiresAt: new Date(now.getTime() + 7 * 86400000) } });
+async function resetToTrial(trialEnabled = true) {
+  await db.organization.update({ where: { id: org }, data: { accessMode: "CONTROLLED", accessVersion: { increment: 1 }, trialEnabled, subscriptionEnabled: false, trialStartedAt: now, trialExpiresAt: new Date(now.getTime() + 7 * 86400000) } });
 }
 const gate = () => { let release!: () => void; const promise = new Promise<void>((resolve) => { release = resolve; }); return { promise, release }; };
 async function webhook(event: string, paymentId: string, eventId = `evt_${randomUUID().replaceAll("-", "")}`, valid = true) {
@@ -97,6 +97,50 @@ for (const index of [0, 1]) it(`allows ${index ? "another" : "the same"} plan af
   assert.equal((await new AccessPolicy(db, () => now).status(org)).source, "SUBSCRIPTION");
   assert.deepEqual((await service.own(org, old.subscriptionId)).commercialTerms, historical.commercialTerms);
   assert.equal((await db.billingPayment.findUniqueOrThrow({ where: { providerPaymentId: payment } })).subscriptionId, old.subscriptionId);
+});
+for (const index of [0, 1]) it(`allows a ${index ? "yearly" : "monthly"} purchase after confirmed admin cancellation without granting a free trial`, async () => {
+  const old = await checkout(); provider.charge(old.providerSubscriptionId!); await service.reconcile(old.subscriptionId);
+  await resetToTrial(false);
+  // Simulate a provider-confirmed cancellation, never merely a local status edit.
+  provider.remote.get(old.providerSubscriptionId!)!.status = "cancelled";
+  await service.reconcile(old.subscriptionId);
+  const historical = await service.own(org, old.subscriptionId);
+  const history = await db.billingPayment.findMany({ where: { subscriptionId: old.subscriptionId } });
+  const policy = new AccessPolicy(db, () => now), report = new SuperAdminService(db, () => now);
+  const before = await policy.status(org);
+  assert.equal(before.allowed, false); assert.equal(before.checkoutAllowed, true);
+  assert.equal(before.checkoutBlockedBySubscription, false);
+  assert.equal((await report.organization(org)).accessAllowed, false);
+  const next = await quote(index); assert.equal(next.replacesSubscriptionId, null);
+  const fresh = await service.checkoutQuote(org, next.id);
+  assert.equal((await policy.status(org)).allowed, false, "Opening checkout must not restore workspace access");
+  provider.charge(fresh.providerSubscriptionId!); await service.reconcile(fresh.subscriptionId);
+  const paid = await policy.status(org), current = await report.organization(org);
+  assert.equal(paid.allowed, true); assert.equal(paid.source, "SUBSCRIPTION");
+  assert.equal(current.accessAllowed, true); assert.equal(current.accessSource, "SUBSCRIPTION"); assert.equal(current.classification, "PAID_ACTIVE");
+  const saved = await db.organization.findUniqueOrThrow({ where: { id: org } });
+  assert.equal(saved.trialEnabled, false); assert.equal(saved.subscriptionEnabled, false);
+  assert.deepEqual(await db.billingPayment.findMany({ where: { subscriptionId: old.subscriptionId } }), history);
+  assert.equal((await service.own(org, old.subscriptionId)).paidUntil!.getTime(), historical.paidUntil!.getTime());
+  assert.equal(provider.cancels, 0); assert.equal(provider.creates, 2);
+});
+it("exposes the settlement deadline and recovers cancellation through the tenant-scoped refresh endpoint", async () => {
+  const old = await checkout(); provider.charge(old.providerSubscriptionId!); await service.reconcile(old.subscriptionId); await resetToTrial();
+  const next = await quote(1);
+  await assert.rejects(service.checkoutQuote(org, next.id, old.subscriptionId), (error: any) => error.code === "REPLACEMENT_PENDING");
+  const pending = await new AccessPolicy(db, () => now).status(org);
+  assert.equal(pending.billingRecovery?.state, "SETTLING");
+  assert.equal(pending.billingRecovery?.settleAfter?.getTime(), now.getTime() + 60000);
+  const history = await db.billingPayment.findMany({ where: { subscriptionId: old.subscriptionId } });
+  now = new Date(now.getTime() + 61000);
+  const response = await fetch(`${base}/api/billing/refresh`, { method: "POST", headers: { Cookie: cookie, Origin: "http://localhost:3000", "X-HRMS-Request": "1", "Content-Type": "application/json" }, body: JSON.stringify({ subscriptionId: old.subscriptionId }) });
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).access.billingRecovery, null);
+  assert.equal(provider.creates, 1, "Checking cancellation must not create another subscription");
+  assert.equal(provider.cancels, 1, "Checking cancellation must not send another cancellation");
+  assert.deepEqual(await db.billingPayment.findMany({ where: { subscriptionId: old.subscriptionId } }), history);
+  await service.checkoutQuote(org, next.id, old.subscriptionId);
+  assert.equal(provider.creates, 2);
 });
 it("blocks a new payment arriving while the older paid subscription is replaced after trial reset", async () => {
   const old = await checkout(); provider.charge(old.providerSubscriptionId!); await service.reconcile(old.subscriptionId); await resetToTrial();

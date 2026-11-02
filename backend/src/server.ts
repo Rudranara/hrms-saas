@@ -5,6 +5,7 @@ import { Prisma, type PrismaClient } from "@prisma/client";
 import { authRouter } from "./auth/routes";
 import { recoveryRouter } from "./auth/recovery";
 import { billingRouter, billingWebhook } from "./billing/routes";
+import { organizationRefundRouter, platformRefundRouter } from "./billing/refund-routes";
 import { createServices, type ServiceOverrides } from "./services";
 import { ServiceError } from "./services/errors";
 import { superAdminRouter } from "./super-admin/routes";
@@ -81,6 +82,8 @@ export function createApp(
     recoveryRouter(db, services.recovery, config.production),
   );
   app.use("/api/auth", authRouter(db, config.production, services));
+  app.use("/api/billing/refunds", organizationRefundRouter(db, services));
+  app.use("/api/super-admin/refunds", platformRefundRouter(db, services));
   app.use("/api/billing", billingRouter(db, services));
   app.use("/api/super-admin/auth", superAdminAuthRouter(db, config.production, services.clock, services.recovery.mailer, config.frontendOrigin));
   app.use("/api/super-admin/account", superAdminAccountRouter(db, services.recovery.mailer, config.frontendOrigin, services.clock, config.production));

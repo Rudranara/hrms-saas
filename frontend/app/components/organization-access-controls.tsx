@@ -73,7 +73,7 @@ function AccessForm({ data, busy, onSave }: { data: Settings; busy: boolean; onS
         </div>
       </div>
       <p className="auth-field-help">Dates use IST and include the full end day. Either enabled option can allow access.</p>
-      {!trial && !subscription && <p className="billing-warning" role="status">Both options are off. Saving will block workspace access.</p>}
+      {!trial && !subscription && <p className="billing-warning" role="status">Both options are off. Workspace access will be blocked until the organization purchases a plan or access is enabled again. Billing remains available.</p>}
       <button className="button primary" type="submit" disabled={busy}>{busy ? "Saving…" : "Save changes"}</button>
     </fieldset>
   </form>;

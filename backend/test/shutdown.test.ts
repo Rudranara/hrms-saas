@@ -31,7 +31,7 @@ it("stops new recovery batches and waits for the running subscription before dra
   context.mock.timers.enable({ apis: ["setInterval"] });
   let release!: () => void, entered!: () => void, calls = 0;
   const running = new Promise<void>((resolve) => { release = resolve; }), started = new Promise<void>((resolve) => { entered = resolve; });
-  const db = { billingReplacement: { findMany: async () => [] }, subscription: { findMany: async () => [{ id: "first" }, { id: "second" }] } } as unknown as PrismaClient;
+  const db = { refundDiscoveryScan: { findUnique: async () => null }, refundTransaction: { findMany: async () => [] }, billingReplacement: { findMany: async () => [] }, subscription: { findMany: async () => [{ id: "first" }, { id: "second" }] } } as unknown as PrismaClient;
   const service = { provider: { available: true }, reconcile: async () => { calls++; entered(); await running; } } as unknown as BillingService;
   const stop = startBillingReconciler(db, service, 60000); context.mock.timers.tick(60000); await started;
   let drained = false; const drain = stop().then(() => { drained = true; });

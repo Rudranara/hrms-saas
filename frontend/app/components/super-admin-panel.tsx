@@ -57,6 +57,7 @@ export function SuperAdminPanel() {
     setError(null); setMetrics(null); setRange({ from: String(form.get("from") || ""), to: String(form.get("to") || "") });
   }
   return <div className="platform-panel">
+    <section className="platform-detail" aria-labelledby="platform-refunds-heading"><h2 id="platform-refunds-heading">Refund management</h2><p className="account-help">Review organization refund requests, approve full or partial refunds, and track verified provider results.</p><Link className="button secondary" href="/super-admin/refunds">Review refund requests</Link></section>
     {error && <div className="auth-alert" role="alert">{error.message} {error.signIn ? <Link href={platformLoginHref("/super-admin")}>Sign in again</Link> : <button onClick={() => { setError(null); setRevision((value) => value + 1); }}>Retry reports</button>}</div>}
     <section aria-labelledby="platform-metrics"><div className="platform-section-heading"><div><span className="eyebrow">LIVE DATABASE REPORTS</span><h2 id="platform-metrics">Platform at a glance</h2></div><button className="button secondary" onClick={() => { setError(null); setMetrics(null); setList(null); setRevision((value) => value + 1); }}>Refresh reports</button></div>
       {!metrics ? !error && <p role="status">Loading platform metrics…</p> : <>

@@ -60,7 +60,7 @@ export type BillingAccess = {
   checkoutAllowed?: boolean;
   checkoutBlockedBySubscription?: boolean;
   checkoutReplacementRequired?: boolean;
-  billingRecovery?: { state: string; subscriptionId: string } | null;
+  billingRecovery?: { state: string; subscriptionId: string; settleAfter?: string | null } | null;
   source: "SUBSCRIPTION" | "TRIAL" | "GRACE" | "MANUAL" | "NONE";
   accessMode?: "AUTO" | "MANUAL" | "SUSPENDED" | "CONTROLLED";
   manualAccess?: { startsAt: string; expiresAt: string; plan?: { id: string; name: string; interval: string } | null } | null;

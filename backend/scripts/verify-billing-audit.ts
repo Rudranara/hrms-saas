@@ -23,7 +23,7 @@ async function main() {
   writeFileSync(resolve("../artifacts/billing-audit-database.json"), JSON.stringify({ database: name }));
   const run = (args: string[]) => {
     const child = spawnSync(process.execPath, args, { env, encoding: "utf8", timeout: 600000, maxBuffer: 10 * 1024 * 1024 });
-    if (args.includes("--test")) writeFileSync(resolve("../artifacts/billing-audit-backend-tests.log"), `${child.stdout}\n${child.stderr}`);
+    if (args.includes("--test")) writeFileSync(resolve(process.argv.includes("--refunds") ? "../artifacts/refund-regression-tests.log" : "../artifacts/billing-audit-backend-tests.log"), `${child.stdout}\n${child.stderr}`);
     console.log(args.includes("--test") && child.status === 0 ? child.stdout.split("\n").filter((line) => /^ℹ /.test(line)).join("\n") : `${child.stdout}\n${child.stderr}`);
     if (child.status !== 0) throw new Error(`Isolated verification command failed (${child.status}): ${args.slice(0, 3).join(" ")}`);
   };
@@ -32,7 +32,9 @@ async function main() {
   run(["node_modules/prisma/build/index.js", "migrate", "status"]);
   run(["node_modules/prisma/build/index.js", "migrate", "diff", "--from-schema-datasource", "prisma/schema.prisma", "--to-schema-datamodel", "prisma/schema.prisma", "--exit-code"]);
   const suite = JSON.parse(readFileSync("package.json", "utf8")).scripts.test as string;
-  run([...suite.replace(/^node /, "").split(" "), "test/billing-audit.test.ts", "test/shutdown.test.ts"]);
+  run(process.argv.includes("--refunds")
+    ? ["--import", "tsx", "--test", "--test-concurrency=1", "test/refunds.test.ts", "test/provider.test.ts", "test/refund-ui-errors.test.ts", "test/auth-redirects.test.ts"]
+    : [...suite.replace(/^node /, "").split(" "), "test/billing-audit.test.ts", "test/shutdown.test.ts"]);
   console.log("Isolated billing verification passed. Fixture database retained only for browser verification.");
 }
 main().catch((error) => { console.error(error.message); process.exitCode = 1; });

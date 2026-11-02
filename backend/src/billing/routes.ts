@@ -8,6 +8,7 @@ import type { Services } from "../services";
 import { ServiceError } from "../services/errors";
 import { paidStatuses } from "./access-rules";
 import { historicalPlanName } from "./terms";
+import { refundEligible, refundedAmount, remainingRefundable } from "./refunds";
 
 const identifier = z
   .string()
@@ -66,16 +67,19 @@ export function billingRouter(db: PrismaClient, services: Services) {
     const payment = await db.billingPayment.findFirst({ where: { subscriptionId: row.id, status: "captured", OR: [{ captureVerifiedAt: { lte: services.clock() } }, { paidAt: { lte: services.clock() } }], providerInvoiceId: { not: null }, currency: row.currency, amountMinor: { gte: row.amountMinor } }, orderBy: { createdAt: "desc" } });
     const access = await services.access.status(req.auth!.organizationId);
     const lastAttempt = await db.billingPayment.findFirst({ where: { subscriptionId: row.id }, select: { status: true }, orderBy: { createdAt: "desc" } });
-    const paid = !!(payment && row.lastSyncedAt && row.paidUntil && row.paidUntil > services.clock() && paidStatuses.includes(row.status));
+    const paid = !!(payment && payment.amountRefundedMinor < payment.amountMinor && row.lastSyncedAt && row.paidUntil && row.paidUntil > services.clock() && paidStatuses.includes(row.status));
     const review = await db.billingReplacement.findFirst({ where: { organizationId: req.auth!.organizationId, state: "CONFLICT" }, select: { id: true } });
     const state = review ? "REVIEW" : paid ? access.allowed && access.source === "SUBSCRIPTION" && access.subscription?.id === row.id ? "SUCCESS" : "RESTRICTED" : lastAttempt?.status === "failed" || ["FAILED", "CANCELLED", "COMPLETED", "EXPIRED"].includes(row.status) ? "FAILED" : "PENDING";
     res.json({ success: true, purchase: { state, subscriptionId: row.id, planId: row.planId, planName: historicalPlanName(row.commercialTerms, (await db.billingPlan.findUniqueOrThrow({ where: { id: row.planId } })).name), interval: row.interval, amountMinor: row.amountMinor, currency: row.currency, paidAmountMinor: paid ? payment!.amountMinor : null, transactionReference: paid ? payment!.providerPaymentId : null, nextBillingAt: row.nextBillingAt, paidUntil: row.paidUntil, cancelAtCycleEnd: row.cancelAtCycleEnd, invoiceUrl: null } });
   });
   router.get("/history", async (req, res) => {
+    const query = z.object({ page: z.string().regex(/^[1-9]\d*$/).transform(Number).pipe(z.number().int().max(10000)).default(1) }).safeParse(req.query);
+    if (!query.success) throw new ServiceError("VALIDATION_ERROR", 400, "Choose a valid payment-history page.");
     const payments = await db.billingPayment.findMany({
       where: { subscription: { organizationId: req.auth!.organizationId } },
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: 50,
+      skip: (query.data.page - 1) * 50,
       select: {
         id: true,
         amountMinor: true,
@@ -86,13 +90,16 @@ export function billingRouter(db: PrismaClient, services: Services) {
         captureVerifiedAt: true,
         paidAtSource: true,
         amountRefundedMinor: true,
+        providerInvoiceId: true,
+        refunds: { select: { id: true, providerRefundId: true, amountMinor: true, status: true, processedAt: true, verifiedAt: true, createdAt: true }, orderBy: { createdAt: "desc" } },
+        refundRequests: { where: { activePaymentId: { not: null } }, select: { id: true }, take: 1 },
         createdAt: true,
         subscription: {
-          select: { plan: { select: { name: true } }, commercialTerms: true, interval: true },
+          select: { plan: { select: { name: true } }, commercialTerms: true, interval: true, lastSyncedAt: true },
         },
       },
     });
-    res.json({ success: true, payments: payments.map(({ subscription, ...payment }) => ({ ...payment, subscription: { interval: subscription.interval, plan: { name: historicalPlanName(subscription.commercialTerms, subscription.plan.name) } } })) });
+    res.json({ success: true, page: query.data.page, hasMore: payments.length === 50, payments: payments.map(({ subscription, providerInvoiceId, refundRequests, ...payment }) => ({ ...payment, amountRefundedMinor: refundedAmount(payment), remainingRefundableMinor: remainingRefundable(payment), refundEligible: !!subscription.lastSyncedAt && refundEligible({ ...payment, providerInvoiceId }) && !refundRequests.length, activeRefundRequest: refundRequests[0]?.id ?? null, subscription: { interval: subscription.interval, plan: { name: historicalPlanName(subscription.commercialTerms, subscription.plan.name) } } })) });
   });
   router.post(
     "/checkout",
@@ -325,6 +332,14 @@ export function billingWebhook(
     if (!local) {
       res.json({ success: true, ignored: true });
       return;
+    }
+    if (refund) {
+      // Create any missing payment evidence before importing the refund. Do not
+      // acknowledge the event until its ledger entry is durable as well.
+      await services.billing.reconcile(local.id);
+      const payment = await db.billingPayment.findFirst({ where: { providerPaymentId: refund.payment_id, subscriptionId: local.id }, select: { id: true } });
+      if (!payment) throw new ServiceError("PAYMENT_MISMATCH", 409, "The refund's original payment has not been reconciled.");
+      await services.refunds.syncPayment(payment.id, refund.id);
     }
     await services.billing.reconcile(local.id, {
       id: eventId,

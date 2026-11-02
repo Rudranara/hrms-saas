@@ -82,6 +82,7 @@ it("saves independent access switches atomically and retains disabled dates with
   assert.equal((await access()).source, "TRIAL"); assert.equal((await report()).classification, "TRIALING");
   assert.equal((await change("SET_CONTROLS", { trialEnabled: false, subscriptionEnabled: false })).status, 200);
   assert.equal((await access()).allowed, false); assert.equal((await access()).state, "SUSPENDED");
+  assert.equal((await access()).checkoutAllowed, true, "Disabling access must preserve the ability to purchase without a trial");
   assert.equal((await report()).accessAllowed, false); assert.equal((await report()).classification, "SUSPENDED");
   assert.equal((await request("/api/organization", undefined, tenantCookie)).status, 402);
   const disabled = await db.organization.findUniqueOrThrow({ where: { id: orgId } });

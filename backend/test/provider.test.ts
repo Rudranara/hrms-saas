@@ -3,6 +3,25 @@ import { it } from "node:test";
 import { createHmac, randomBytes } from "node:crypto";
 import { RazorpayProvider } from "../src/billing/provider";
 import { ServiceError } from "../src/services/errors";
+it("sends a stable refund idempotency header and receipt on the original payment only", async context => {
+  const calls: { url: string; body: Record<string, unknown>; key: string | null }[] = [];
+  context.mock.method(globalThis, "fetch", async (url: string | URL | Request, options: RequestInit) => {
+    calls.push({ url: String(url), body: JSON.parse(String(options.body)), key: new Headers(options.headers).get("X-Refund-Idempotency") });
+    return Response.json({ id: "rfnd_fixture", payment_id: "pay_fixture", amount: 4000, currency: "INR", receipt: "refund_receipt_fixture", status: "pending", created_at: 1793613600, notes: [] });
+  });
+  const provider = new RazorpayProvider({ RAZORPAY_KEY_ID: "rzp_test_fixture", RAZORPAY_KEY_SECRET: "fixture", RAZORPAY_MODE: "test" });
+  await provider.createRefund("pay_fixture", 4000, "refund_receipt_fixture", "refund_key_fixture");
+  assert.equal(calls[0]!.url, "https://api.razorpay.com/v1/payments/pay_fixture/refund");
+  assert.equal(calls[0]!.key, "refund_key_fixture"); assert.equal(calls[0]!.body.receipt, "refund_receipt_fixture"); assert.equal(calls[0]!.body.amount, 4000);
+  await assert.rejects(provider.createRefund("pay_fixture", -1, "refund_receipt_fixture", "refund_key_fixture")); assert.equal(calls.length, 1);
+});
+it("preserves Retry-After on account-wide 429 responses without resending GETs", async context => {
+  let calls = 0;
+  context.mock.method(globalThis, "fetch", async () => { calls++; return new Response("", { status: 429, headers: { "Retry-After": "120" } }); });
+  const provider = new RazorpayProvider({ RAZORPAY_KEY_ID: "rzp_test_fixture", RAZORPAY_KEY_SECRET: "fixture", RAZORPAY_MODE: "test" });
+  await assert.rejects(provider.payment("pay_fixture"), error => error instanceof ServiceError && error.code === "PROVIDER_RATE_LIMITED" && error.rateLimitScope === "global" && error.retryAfterMs === 120000);
+  assert.equal(calls, 1);
+});
 const secret = randomBytes(32).toString("hex"),
   webhookSecret = randomBytes(32).toString("hex");
 const environment = {

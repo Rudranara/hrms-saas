@@ -20,7 +20,7 @@ export class AccessPolicy {
       select: { trialStartedAt: true, trialExpiresAt: true, accessMode: true, accessVersion: true, trialEnabled: true, subscriptionEnabled: true, manualAccessStartsAt: true, manualAccessExpiresAt: true, manualAccessPlan: true },
     });
     const now = this.clock();
-    const recovery = await this.db.billingReplacement.findFirst({ where: { organizationId, state: { in: ["CHECKING", "CANCELLING", "SETTLING", "CONFLICT"] } }, select: { state: true, fromSubscriptionId: true } });
+    const recovery = await this.db.billingReplacement.findFirst({ where: { organizationId, state: { in: ["CHECKING", "CANCELLING", "SETTLING", "CONFLICT"] } }, select: { state: true, fromSubscriptionId: true, settleAfter: true } });
     const subscriptions = await this.db.subscription.findMany({
       where: { organizationId },
       orderBy: { createdAt: "desc" },
@@ -107,7 +107,7 @@ export class AccessPolicy {
       checkoutAllowed,
       checkoutBlockedBySubscription,
       checkoutReplacementRequired: blockers.some((s) => replaceableAfterTrialReset(organization, s)),
-      billingRecovery: recovery ? { state: recovery.state, subscriptionId: recovery.fromSubscriptionId } : null,
+      billingRecovery: recovery ? { state: recovery.state, subscriptionId: recovery.fromSubscriptionId, settleAfter: recovery.settleAfter } : null,
       accessMode: organization.accessMode,
       trialEnabled: organization.trialEnabled,
       subscriptionEnabled: organization.subscriptionEnabled,

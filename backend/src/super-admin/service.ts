@@ -16,11 +16,11 @@ function organizationRows(now: Date, graceMs: number) {
   const hasGrace = (alias: "s" | "candidate") => Prisma.sql`(${graceAccessSql(alias, now, graceMs)} AND ${matchesAccessPolicySql(alias)})`;
   return Prisma.sql`SELECT base.*, CASE
     WHEN accessMode = 'SUSPENDED' THEN 'SUSPENDED'
-    WHEN accessMode = 'CONTROLLED' AND trialEnabled = 0 AND subscriptionEnabled = 0 THEN 'SUSPENDED'
-    WHEN accessMode = 'CONTROLLED' AND trialEnabled = 1 AND subscriptionEnabled = 0 AND hasPaidAccess = 1 THEN CASE WHEN subscriptionStatus = 'ACTIVE' THEN 'PAID_ACTIVE' WHEN subscriptionStatus IN ('PENDING','HALTED') THEN 'PAST_DUE' WHEN subscriptionStatus = 'COMPLETED' THEN 'EXPIRED' ELSE subscriptionStatus END
+    WHEN accessMode = 'CONTROLLED' AND trialEnabled = 0 AND subscriptionEnabled = 0 AND hasPaidAccess = 0 AND hasGraceAccess = 0 THEN 'SUSPENDED'
+    WHEN accessMode = 'CONTROLLED' AND subscriptionEnabled = 0 AND hasPaidAccess = 1 THEN CASE WHEN subscriptionStatus = 'ACTIVE' THEN 'PAID_ACTIVE' WHEN subscriptionStatus IN ('PENDING','HALTED') THEN 'PAST_DUE' WHEN subscriptionStatus = 'COMPLETED' THEN 'EXPIRED' ELSE subscriptionStatus END
     WHEN accessMode = 'CONTROLLED' AND manualActive = 1 THEN 'ADMIN_ACTIVE'
     WHEN accessMode = 'CONTROLLED' AND trialActive = 1 THEN 'TRIALING'
-    WHEN accessMode = 'CONTROLLED' AND trialEnabled = 1 AND subscriptionEnabled = 0 AND hasGraceAccess = 1 THEN 'PAST_DUE'
+    WHEN accessMode = 'CONTROLLED' AND subscriptionEnabled = 0 AND hasGraceAccess = 1 THEN 'PAST_DUE'
     WHEN accessMode = 'CONTROLLED' AND subscriptionEnabled = 1 AND manualAccessStartsAt > ${now} THEN 'ADMIN_SCHEDULED'
     WHEN accessMode = 'CONTROLLED' THEN 'ADMIN_EXPIRED'
     WHEN accessMode = 'MANUAL' AND manualActive = 1 THEN 'ADMIN_ACTIVE'
@@ -39,11 +39,11 @@ function organizationRows(now: Date, graceMs: number) {
     WHEN trialEnd <= ${now} THEN 'TRIAL_EXPIRED'
     ELSE 'NO_SUBSCRIPTION' END AS classification,
     CASE WHEN accessMode = 'SUSPENDED' THEN 0 WHEN accessMode = 'MANUAL' THEN manualActive
-      WHEN accessMode = 'CONTROLLED' AND trialEnabled = 1 AND subscriptionEnabled = 0 THEN (hasPaidAccess = 1 OR trialActive = 1 OR hasGraceAccess = 1)
+      WHEN accessMode = 'CONTROLLED' AND subscriptionEnabled = 0 THEN (hasPaidAccess = 1 OR trialActive = 1 OR hasGraceAccess = 1)
       WHEN accessMode = 'CONTROLLED' THEN (manualActive = 1 OR trialActive = 1)
       ELSE (hasPaidAccess = 1 OR trialActive = 1 OR hasGraceAccess = 1) END AS accessAllowed,
     CASE WHEN accessMode = 'SUSPENDED' THEN 'NONE'
-      WHEN accessMode = 'CONTROLLED' AND trialEnabled = 1 AND subscriptionEnabled = 0 THEN IF(hasPaidAccess = 1, 'SUBSCRIPTION', IF(trialActive = 1, 'TRIAL', IF(hasGraceAccess = 1, 'GRACE', 'NONE')))
+      WHEN accessMode = 'CONTROLLED' AND subscriptionEnabled = 0 THEN IF(hasPaidAccess = 1, 'SUBSCRIPTION', IF(trialActive = 1, 'TRIAL', IF(hasGraceAccess = 1, 'GRACE', 'NONE')))
       WHEN accessMode = 'CONTROLLED' THEN IF(manualActive = 1, 'MANUAL', IF(trialActive = 1, 'TRIAL', 'NONE'))
       WHEN accessMode = 'MANUAL' THEN IF(manualActive = 1, 'MANUAL', 'NONE')
       WHEN hasPaidAccess = 1 THEN 'SUBSCRIPTION' WHEN trialActive = 1 THEN 'TRIAL'

@@ -8,7 +8,7 @@ it("keeps organization role values on the organization landing page", () => {
   assert.equal(loginDestination("EMPLOYEE", null), "/dashboard");
 });
 it("preserves safe platform URLs without granting User roles platform continuations", () => {
-  for (const path of ["/super-admin", "/super-admin/settings", "/super-admin/admins", "/super-admin/organizations/cuid_example-123"]) {
+  for (const path of ["/super-admin", "/super-admin/settings", "/super-admin/refunds", "/super-admin/admins", "/super-admin/organizations/cuid_example-123"]) {
     assert.equal(platformReturn(path), path);
     assert.equal(new URL(platformLoginHref(path), "http://localhost").searchParams.get("next"), path);
     assert.equal(new URL(platformLoginHref(path), "http://localhost").pathname, "/super-admin/login");
@@ -31,4 +31,10 @@ it("preserves organization billing continuations independently of legacy User ro
     assert.equal(loginDestination("ORGANIZATION_ADMIN", path), path);
     assert.equal(loginDestination("SUPER_ADMIN", path), path);
   }
+});
+
+it("preserves refund reauthentication destinations while rejecting unsafe refund paths", () => {
+  assert.equal(platformReturn("/super-admin/refunds"), "/super-admin/refunds");
+  assert.equal(new URL(platformLoginHref("/super-admin/refunds"), "http://localhost").searchParams.get("next"), "/super-admin/refunds");
+  for (const value of ["https://evil.test/super-admin/refunds", "//evil.test", "/super-admin/refunds?next=https://evil.test", "/super-admin/refunds#x", "/super-admin/refunds/other"]) assert.equal(platformReturn(value), null);
 });

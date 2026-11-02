@@ -1110,8 +1110,9 @@ describe(
       assert.equal((await request("/api/organization", undefined, a.cookie)).status, 200);
       now = new Date(verified.subscription.paidUntil);
       assert.equal((await request("/api/billing/status", undefined, a.cookie)).data.access.allowed, false);
+      await db.organization.update({ where: { id: a.organizationId }, data: { accessMode: "CONTROLLED", trialEnabled: false, subscriptionEnabled: false } });
+      assert.equal((await request("/api/billing/status", undefined, a.cookie)).data.access.checkoutAllowed, true, "A free trial is not required to purchase after admin access is turned off");
       for (const policy of [
-        { accessMode: "CONTROLLED", trialEnabled: false, subscriptionEnabled: false },
         { accessMode: "CONTROLLED", trialEnabled: false, subscriptionEnabled: true },
         { accessMode: "MANUAL", trialEnabled: true, subscriptionEnabled: false },
       ]) {

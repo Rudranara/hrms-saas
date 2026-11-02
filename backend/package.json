@@ -7,13 +7,14 @@
     "dev": "tsx watch src/app.ts",
     "build": "tsc",
     "start": "node dist/app.js",
-    "test": "node --import tsx --test --test-concurrency=1 test/auth.test.ts test/registration.test.ts test/lifecycle.test.ts test/provider.test.ts test/smtp.test.ts test/plan-sync.test.ts test/continuation.test.ts test/super-admin.test.ts test/organization-access.test.ts test/auth-redirects.test.ts test/super-admin-account.test.ts test/super-admin-management.test.ts test/platform-auth.test.ts test/platform-recovery.test.ts",
+    "test": "node --import tsx --test --test-concurrency=1 test/auth.test.ts test/registration.test.ts test/lifecycle.test.ts test/provider.test.ts test/smtp.test.ts test/plan-sync.test.ts test/continuation.test.ts test/super-admin.test.ts test/organization-access.test.ts test/auth-redirects.test.ts test/super-admin-account.test.ts test/super-admin-management.test.ts test/platform-auth.test.ts test/platform-recovery.test.ts test/refunds.test.ts test/refund-ui-errors.test.ts",
     "billing:sync-plans": "tsx scripts/sync-plans.ts",
     "billing:reconcile": "tsx scripts/reconcile-billing.ts",
     "test:billing-audit": "tsx scripts/verify-billing-audit.ts",
     "mail:local": "tsx scripts/local-mail.ts",
     "mail:check": "tsx scripts/check-mail.ts",
-    "admin:provision": "tsx scripts/provision-super-admin.ts"
+    "admin:provision": "tsx scripts/provision-super-admin.ts",
+    "lint": "node ../frontend/node_modules/eslint/bin/eslint.js src"
   },
   "keywords": [],
   "author": "",

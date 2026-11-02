@@ -18,6 +18,8 @@ import { billingHref, checkoutHref, BILLING_CONTINUATION } from "../lib/billing-
 import { Icon } from "./ui-icon";
 import { SubscriptionPurchase } from "./subscription-purchase";
 import { PaymentStatus } from "./payment-status";
+import { BillingReplacementStatus } from "./billing-replacement-status";
+import { OrganizationRefunds } from "./organization-refunds";
 
 type CheckoutResponse = {
   razorpay_payment_id: string;
@@ -67,9 +69,7 @@ async function billingRequest(action: string, data?: unknown) {
   );
   const result = await response.json();
   if (!response.ok)
-    throw new Error(
-      result.message || "The billing service could not complete this request.",
-    );
+    throw Object.assign(new Error(result.message || "The billing service could not complete this request."), { code: result.code });
   return result;
 }
 type Payment = {
@@ -82,6 +82,9 @@ type Payment = {
   paymentCreatedAt?: string | null;
   paidAtSource?: string | null;
   amountRefundedMinor?: number;
+  refundEligible?: boolean;
+  remainingRefundableMinor?: number;
+  refunds?: { id: string; providerRefundId: string | null; amountMinor: number; status: string; processedAt: string | null }[];
   createdAt: string;
   subscription: { plan: { name: string }; interval: string };
 };
@@ -120,6 +123,7 @@ export function BillingPanel({
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [historyLoading, setHistoryLoading] = useState(user.role === "ORGANIZATION_ADMIN");
   const [historyError, setHistoryError] = useState("");
+  const [historyPage, setHistoryPage] = useState(1), [hasMoreHistory, setHasMoreHistory] = useState(false), [olderHistoryLoading, setOlderHistoryLoading] = useState(false);
   const pending = useRef(false);
   const [purchaseId, setPurchaseId] = useState("");
   const [checkoutOpen, setCheckoutOpen] = useState(false);
@@ -141,7 +145,7 @@ export function BillingPanel({
     if (user.role === "ORGANIZATION_ADMIN")
       billingRequest("history")
         .then((data) => {
-          if (alive) setPayments(data.payments);
+          if (alive) { setPayments(data.payments); setHistoryPage(1); setHasMoreHistory(!!data.hasMore); }
         })
         .catch((error) => {
           if (alive) setHistoryError(error.message);
@@ -159,6 +163,7 @@ export function BillingPanel({
     try {
       const history = await billingRequest("history");
       setPayments(history.payments);
+      setHistoryPage(1); setHasMoreHistory(!!history.hasMore);
     } catch (error) {
       setHistoryError(error instanceof Error ? error.message : "Please try again.");
     } finally {
@@ -169,22 +174,29 @@ export function BillingPanel({
     const result = await billingRequest("status");
     setAccess(result.access);
     if (user.role === "ORGANIZATION_ADMIN") {
-      try { const history = await billingRequest("history"); setPayments(history.payments); setHistoryError(""); }
+      try { const history = await billingRequest("history"); setPayments(history.payments); setHistoryPage(1); setHasMoreHistory(!!history.hasMore); setHistoryError(""); }
       catch { setHistoryError("Payment history is temporarily unavailable. Your subscription status is unchanged."); }
     }
     return result.access as BillingAccess;
   }
-  async function action(kind: "refresh" | "cancel") {
-    if (pending.current || !access.subscription) return;
+  async function olderPayments() {
+    if (olderHistoryLoading) return;
+    setOlderHistoryLoading(true);
+    try { const history = await billingRequest(`history?page=${historyPage + 1}`); setPayments(previous => [...previous, ...history.payments.filter((payment: Payment) => !previous.some(item => item.id === payment.id))]); setHistoryPage(historyPage + 1); setHasMoreHistory(!!history.hasMore); }
+    catch { setError("Older payments could not be loaded. Try again; your history is unchanged."); }
+    finally { setOlderHistoryLoading(false); }
+  }
+  async function action(kind: "refresh" | "cancel", subscriptionId = access.subscription?.id) {
+    if (pending.current || !subscriptionId) return;
     const hasCycle =
-      !!access.subscription.currentPeriodStart &&
-      !!access.subscription.currentPeriodEnd;
+      !!access.subscription?.currentPeriodStart &&
+      !!access.subscription?.currentPeriodEnd;
     if (
       kind === "cancel" &&
       !window.confirm(
         hasCycle
-          ? "Cancel renewal at the end of the current billing cycle? Verified paid access remains until the paid-through date."
-          : "Cancel this pending subscription immediately? Your existing free trial dates will remain unchanged.",
+          ? "Cancel renewal at the end of the current billing cycle? Verified paid access remains until the paid-through date. No automatic refund is issued; refund requests are reviewed separately."
+          : "Cancel this pending subscription immediately? Your existing free trial dates will remain unchanged. This does not issue a refund.",
       )
     )
       return;
@@ -194,11 +206,11 @@ export function BillingPanel({
     setError("");
     try {
       const data = await billingRequest(kind, {
-        subscriptionId: access.subscription.id,
+        subscriptionId,
         ...(kind === "cancel" ? { atCycleEnd: hasCycle } : {}),
       });
       setAccess(data.access);
-      setMessage(data.message || "Subscription status refreshed.");
+      setMessage(data.message || (kind === "refresh" && access.billingRecovery && !data.access.billingRecovery ? "Previous subscription verified. Review your payment summary and choose Proceed to payment." : "Subscription status refreshed."));
       await updateStatus();
     } catch (error) {
       setError(
@@ -282,7 +294,10 @@ export function BillingPanel({
       instance.open();
     } catch (error) {
       setCheckoutOpen(false);
-      setError(
+      if (error instanceof Error && "code" in error && error.code === "REPLACEMENT_PENDING") {
+        setMessage("The previous cancellation needs confirmation before a new payment can start.");
+        try { await updateStatus(); } catch { setError("Unable to load cancellation status. Refresh this page before trying again."); }
+      } else setError(
         error instanceof Error
           ? error.message
           : "Checkout could not be initiated.",
@@ -317,7 +332,7 @@ export function BillingPanel({
   }, [selected, review]);
   if (checkoutOnly) return <div className="billing-panel billing-checkout-panel">
     <Link className="billing-text-link" href="/billing">← Back to plans and billing</Link>
-    {access.billingRecovery?.state === "CONFLICT" && <p className="auth-alert" role="alert">Payment and cancellation need review. Your payment records and verified paid time are retained. Contact your platform administrator; do not pay again.</p>}
+    {access.billingRecovery && <BillingReplacementStatus key={`${access.billingRecovery.subscriptionId}:${access.serverTime}`} recovery={access.billingRecovery} serverTime={access.serverTime} busy={busy} onCheck={() => void action("refresh", access.billingRecovery!.subscriptionId)} />}
     {error && <p className="auth-alert" role="alert">{error}</p>}
     {message && <p className="billing-neutral" role="status">{message}</p>}
     {purchaseId ? <PaymentStatus key={purchaseId} subscriptionId={purchaseId} pollingEnabled={!checkoutOpen} onBack={() => { showPurchase(""); void updateStatus().catch(() => {}); }} /> : selected ? <SubscriptionPurchase key={selected.id} plan={selected} plans={plans} organizationName={user.organization.name} disabled={busy || !canCheckout(selected)} onPay={checkout} /> : <p role="status">Loading your selected plan…</p>}
@@ -326,9 +341,9 @@ export function BillingPanel({
   </div>;
   return (
     <div className="billing-panel">
-      {access.billingRecovery && <p className="billing-neutral" role="status">{access.billingRecovery.state === "CONFLICT" ? "Payment and cancellation need review. Payment records and verified paid time are retained. Contact your platform administrator; do not pay again." : "Your previous subscription is being checked before a plan change. Wait one minute, then refresh provider status before proceeding."}</p>}
+      {access.billingRecovery && <BillingReplacementStatus key={`${access.billingRecovery.subscriptionId}:${access.serverTime}`} recovery={access.billingRecovery} serverTime={access.serverTime} busy={busy} onCheck={() => void action("refresh", access.billingRecovery!.subscriptionId)} />}
       {access.accessMode === "SUSPENDED" && <div className="billing-warning" role="status"><h2>Workspace access is suspended.</h2><p>Contact your platform administrator to restore access. Existing billing history and cancellation remain available. A new payment will not remove this suspension.</p></div>}
-      {access.accessMode === "CONTROLLED" && <div className="billing-neutral" role="status"><h2>{formatAccessState(access.state)}</h2><p>{access.checkoutAllowed ? "Your platform administrator updated your trial dates. You can purchase a plan at any time; paid access starts after payment is verified." : "Your platform administrator manages trial and subscription access dates. Contact them to adjust access. Existing payment-provider charges and billing history remain separate."}</p></div>}
+      {access.accessMode === "CONTROLLED" && <div className="billing-neutral" role="status"><h2>{formatAccessState(access.state)}</h2><p>{access.checkoutAllowed ? access.source === "SUBSCRIPTION" || access.source === "GRACE" ? "Your paid subscription is managed through billing. Access depends on verified payment and subscription status." : "You can choose and purchase a plan. A free trial is not required; paid workspace access starts after payment is verified. Any previous renewals must be confirmed cancelled before a replacement starts." : "Your platform administrator manages trial and subscription access dates. Contact them to adjust access. Existing payment-provider charges and billing history remain separate."}</p></div>}
       {access.accessMode === "MANUAL" && access.manualAccess && <div className="billing-neutral" role="status"><h2>{formatAccessState(access.state)}</h2><p>Your platform administrator set workspace access from {formatDate(access.manualAccess.startsAt)} until {formatDate(access.manualAccess.expiresAt)}. These dates are separate from payment-provider billing dates. Contact your platform administrator to adjust them.</p></div>}
       {invalidSelection && <p className="auth-alert" role="alert">This plan selection is invalid or no longer available. Choose a plan below.</p>}
       {required && (
@@ -606,7 +621,7 @@ export function BillingPanel({
               ))}
           </div>
         )}
-        {access.checkoutReplacementRequired && <p className="billing-neutral">You can choose a plan after your administrator switched this organization to trial. The payment summary will ask you to confirm ending previous renewals before a replacement starts. Earlier payments remain in your history.</p>}
+        {access.checkoutReplacementRequired && <p className="billing-neutral">You can choose a plan after your administrator updated subscription access. The payment summary will ask you to confirm ending previous renewals before a replacement starts. Earlier payments remain in your history.</p>}
         {current?.supersededByAccessPolicy ? <p className="small-note">A new paid period starts after verified payment. Earlier payments and trial dates are retained. No automatic refunds or proration.</p> : <p className="small-note">
           Plan changes require cancelling the existing subscription and waiting
           until its paid period ends. No automatic proration. Failed renewals
@@ -634,7 +649,7 @@ export function BillingPanel({
                 <th scope="row">{payment.subscription.plan.name}</th>
                  <td>{formatDate(payment.paidAt || payment.captureVerifiedAt || payment.paymentCreatedAt || payment.createdAt)}{!payment.paidAt && payment.captureVerifiedAt && <small> Capture verified</small>}</td>
                 <td><span className="billing-payment-status">{payment.status.replaceAll("_", " ").toLowerCase()}</span></td>
-                 <td>{formatMoney(payment.amountMinor, payment.currency)}{!!payment.amountRefundedMinor && <small> Refunded: {formatMoney(payment.amountRefundedMinor, payment.currency)}</small>}</td>
+                 <td>{formatMoney(payment.amountMinor, payment.currency)}{!!payment.amountRefundedMinor && <small> Refunded: {formatMoney(payment.amountRefundedMinor, payment.currency)}</small>}{payment.remainingRefundableMinor !== undefined && <small> Remaining refundable: {formatMoney(payment.remainingRefundableMinor, payment.currency)}</small>}{payment.refunds?.map(refund => <small key={refund.id}>{refund.providerRefundId || "Refund pending"}: {refund.status.toLowerCase()}{refund.processedAt ? ` · Verified ${formatDate(refund.processedAt)}` : ""}</small>)}</td>
               </tr>
             ))}
             </tbody>
@@ -643,6 +658,8 @@ export function BillingPanel({
           <div className="billing-empty-history"><span className="billing-empty-icon"><Icon name="wallet" /></span><h3>No payments yet</h3><p>Your payment history will appear here once a payment is recorded.</p></div>
         )}
       </section>
+      {user.role === "ORGANIZATION_ADMIN" && hasMoreHistory && <button className="button secondary" disabled={busy || olderHistoryLoading} onClick={() => void olderPayments()}>{olderHistoryLoading ? "Loading older payments…" : "Load older payments"}</button>}
+      {user.role === "ORGANIZATION_ADMIN" && <OrganizationRefunds payments={payments} onChange={updateStatus} />}
       <footer className="billing-footer"><p>Employee, attendance, leave, and payroll modules are still in development. A subscription does not make unfinished modules operational.</p><Link href="/pricing">Compare all plans <Icon name="arrow" /></Link></footer>
     </div>
   );

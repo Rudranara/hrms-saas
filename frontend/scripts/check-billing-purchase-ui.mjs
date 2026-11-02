@@ -36,7 +36,16 @@ try {
     try {
       if (action === "history") { await fulfill(requestId, 503, { success: false, message: "Fixture history outage" }); return; }
       if (action === "status") { if (statusFailure) { statusFailure = false; await fulfill(requestId, 503, { success: false }); } else await command("Fetch.continueRequest", { requestId }); return; }
-      if (action === "refresh") { refreshCount++; if (verificationOutage) { verificationOutage = false; await fulfill(requestId, 503, { success: false }); } else await fulfill(requestId, 200, { success: true }); return; }
+      if (action === "refresh") {
+        refreshCount++;
+        if (trialResetCase && replacementWaiting && JSON.parse(request.postData).subscriptionId === oldSubscriptionId) {
+          await db.billingReplacement.updateMany({ where: { organizationId: orgId, fromSubscriptionId: oldSubscriptionId }, data: { state: "READY" } });
+          const { AccessPolicy } = backend("./dist/billing/access.js");
+          await fulfill(requestId, 200, { success: true, access: await new AccessPolicy(db, () => new Date()).status(orgId) });
+        } else if (verificationOutage) { verificationOutage = false; await fulfill(requestId, 503, { success: false }); }
+        else await fulfill(requestId, 200, { success: true });
+        return;
+      }
       const body = JSON.parse(request.postData); bodies.push({ action, body });
       if (action === "checkout") {
         checkoutCount++; assert.deepEqual(Object.keys(body), trialResetCase ? ["quoteId", "replaceSubscriptionId"] : ["quoteId"]);
@@ -46,11 +55,13 @@ try {
           if (!replacementWaiting) {
             replacementWaiting = true;
             await db.subscription.update({ where: { id: oldSubscriptionId }, data: { status: "CANCELLED", lastSyncedAt: new Date() } });
+            await db.billingReplacement.create({ data: { organizationId: orgId, fromSubscriptionId: oldSubscriptionId, quoteId: quote.id, state: "SETTLING", settleAfter: new Date(Date.now() + 3000) } });
             await fulfill(requestId, 409, { success: false, code: "REPLACEMENT_PENDING", message: "The previous subscription is being checked. Refresh provider status before proceeding again." }); return;
           }
           if (subscriptionId === oldSubscriptionId) {
             const organization = await db.organization.findUniqueOrThrow({ where: { id: orgId } });
             const row = await db.subscription.create({ data: { organizationId: orgId, planId: quote.planId, providerPlanId: quote.providerPlanId, providerSubscriptionId: `sub_reset_${run.replaceAll("-", "")}`, status: "CREATED", amountMinor: quote.amountMinor, currency: quote.currency, interval: quote.interval, totalCount: quote.totalCount, commercialTerms: { accessPolicyVersion: organization.accessVersion, planName: quote.planName } } }); subscriptionId = row.id;
+            await db.billingReplacement.updateMany({ where: { organizationId: orgId, fromSubscriptionId: oldSubscriptionId }, data: { state: "COMPLETED", toSubscriptionId: row.id } });
           }
         }
         if (!subscriptionId) { const row = await db.subscription.create({ data: { organizationId: orgId, planId: quote.planId, providerPlanId: quote.providerPlanId, providerSubscriptionId: `sub_fixture_${run.replaceAll("-", "")}`, status: "CREATED", amountMinor: quote.amountMinor, currency: quote.currency, interval: quote.interval, totalCount: quote.totalCount } }); subscriptionId = row.id; }
@@ -121,7 +132,7 @@ try {
   assert.equal(await db.subscription.count({ where: { organizationId: orgId } }), 1); assert.equal(bodies.filter((item) => item.action === "confirm").length, 1); assert.deepEqual(exceptions, []);
   oldSubscriptionId = subscriptionId; trialResetCase = true;
   const previousPayments = await db.billingPayment.findMany({ where: { subscriptionId: oldSubscriptionId } });
-  await db.organization.update({ where: { id: orgId }, data: { accessMode: "CONTROLLED", accessVersion: { increment: 1 }, trialEnabled: true, subscriptionEnabled: false, trialExpiresAt: new Date(Date.now() + 7 * 86400000) } });
+  await db.organization.update({ where: { id: orgId }, data: { accessMode: "CONTROLLED", accessVersion: { increment: 1 }, trialEnabled: false, subscriptionEnabled: false, trialExpiresAt: new Date(Date.now() + 7 * 86400000) } });
   await command("Page.navigate", { url: origin + "/billing" });
   await until("Array.from(document.querySelectorAll('button')).some(button=>button.textContent.trim()==='Choose Essentials'&&!button.disabled)", "plans selectable after administrator trial reset");
   for (const label of ["Choose Essentials", "Choose Growth", "Choose Organization"]) assert.equal(await evaluate(`Array.from(document.querySelectorAll('button')).some(button=>button.textContent.trim()===${JSON.stringify(label)}&&!button.disabled)`), true);
@@ -130,13 +141,18 @@ try {
   assert.equal((await db.subscription.findUniqueOrThrow({ where: { id: oldSubscriptionId } })).status, "ACTIVE", "Selecting or reviewing a plan must not cancel previous renewals");
   const requestsBeforeConsent = checkoutCount; await click("Proceed to payment"); assert.equal(checkoutCount, requestsBeforeConsent, "Replacement requires consent before submit");
   await evaluate("document.querySelector('.billing-purchase-consent input').click();window.__checkout=null"); await click("Proceed to payment");
-  await until("document.querySelector('.billing-checkout-panel [role=alert]')?.textContent.includes('previous subscription is being checked')", "replacement wait displayed");
+  await until("document.querySelector('.billing-checkout-panel [role=status]')?.textContent.includes('Confirming your previous subscription')", "replacement wait displayed without an error");
   assert.equal(await evaluate("!!window.__checkout"), false, "Razorpay must not open until the previous cancellation is confirmed");
+  const beforeCheck = checkoutCount;
+  await until("Array.from(document.querySelectorAll('button')).some(button=>button.textContent.trim()==='Check subscription status'&&!button.disabled)", "settlement countdown enables checking");
+  await click("Check subscription status");
+  await until("document.querySelector('.billing-checkout-panel')?.textContent.includes('Previous subscription verified')", "checkout cancellation recovery");
+  assert.equal(checkoutCount, beforeCheck, "Status checking must not open payment or create a subscription");
   await click("Proceed to payment"); await until("!!window.__checkout", "replacement payment opens after confirmed cancellation");
   await evaluate("window.__checkout.options.handler({razorpay_payment_id:'pay_reset_fixture',razorpay_subscription_id:window.__checkout.options.subscription_id,razorpay_signature:'fixture'})");
   await until("location.pathname==='/dashboard' && document.body?.textContent.includes('Payment verified:')", "new purchase activates after trial reset");
   assert.equal(await db.subscription.count({ where: { organizationId: orgId } }), 2);
   assert.deepEqual(await db.billingPayment.findMany({ where: { subscriptionId: oldSubscriptionId } }), previousPayments);
   assert.deepEqual(exceptions, []);
-  console.log(JSON.stringify({ passed: true, checks: ["monthly/yearly configuration", "no automatic payment", "backend quotes", "yearly cycle disclosure", "edit and reload", "quote expiry", "four responsive widths", "secondary API failure", "checkout open beyond old polling window", "checkout closure restarts polling", "verification outage stays pending", "safe retry", "verified failure", "verified success stops polling", "dashboard confirmation", "plans enabled after administrator trial reset", "explicit replacement consent", "wait before replacement payment", "earlier payments preserved"], realProviderPayments: false }));
+  console.log(JSON.stringify({ passed: true, checks: ["monthly/yearly configuration", "no automatic payment", "backend quotes", "yearly cycle disclosure", "edit and reload", "quote expiry", "four responsive widths", "secondary API failure", "checkout open beyond old polling window", "checkout closure restarts polling", "verification outage stays pending", "safe retry", "verified failure", "verified success stops polling", "dashboard confirmation", "plans enabled after admin cancellation without a trial", "explicit replacement consent", "wait before replacement payment", "earlier payments preserved"], realProviderPayments: false }));
 } finally { if (socket) socket.close(); if (orgId) await db.organization.deleteMany({ where: { id: orgId } }); await db.$disconnect(); }

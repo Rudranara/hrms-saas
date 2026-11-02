@@ -473,28 +473,7 @@ export class BillingService {
         )
           continue;
         payments.push({ value: payment, invoice: invoice.id });
-        const belongsToPeriod =
-          invoice.billing_start === start ||
-          (invoice.issued_at ?? invoice.created_at) >= start;
-        if (
-          remote.paid_count > 0 &&
-          end > start &&
-          start > 0 &&
-          belongsToPeriod &&
-          (invoice.billing_start === start || payment.created_at >= start) &&
-          invoice.status === "paid" &&
-          invoice.amount_paid >= local.amountMinor &&
-          invoice.currency === local.currency &&
-          payment.status === "captured" &&
-          payment.amount >= local.amountMinor &&
-          payment.amount_refunded < payment.amount
-        ) {
-          const until =
-            invoice.billing_end && invoice.billing_end > start
-              ? Math.min(end, invoice.billing_end)
-              : end;
-          paidUntil = new Date(until * 1000);
-        }
+
       }
       // Payment-only webhooks can report failed attempts that are no longer
       // invoice.payment_id. Record them only after fetching the provider invoice
@@ -531,11 +510,6 @@ export class BillingService {
         // independently verified subscription state without attributing that
         // payment to a tenant or granting paid time from the event payload.
       }
-      const currentPaymentRefunded = payments.some(
-        (p) =>
-          p.value.status === "refunded" ||
-          p.value.amount_refunded >= p.value.amount,
-      );
       // Never extend access from subscription.status alone or an authorization payment.
       await this.db.$transaction(async (tx) => {
         await tx.$queryRaw`SELECT id FROM Organization WHERE id = ${local.organizationId} FOR UPDATE`;
@@ -552,6 +526,29 @@ export class BillingService {
             503,
             "Subscription synchronization timed out. Please retry.",
           );
+        // Serialize with refund observation and re-read irreversible evidence at commit.
+        // Provider snapshots fetched before this transaction are never allowed to undo it.
+        for (const entry of [...payments].sort((a, b) => a.value.id.localeCompare(b.value.id))) {
+          await tx.$queryRaw`SELECT id FROM BillingPayment WHERE providerPaymentId = ${entry.value.id} FOR UPDATE`;
+          const latest = await tx.billingPayment.findUnique({ where: { providerPaymentId: entry.value.id } });
+          const refunded = Math.max(latest?.amountRefundedMinor ?? 0, entry.value.amount_refunded);
+          entry.value = { ...entry.value, amount_refunded: refunded,
+            status: latest?.status === "refunded" || refunded >= entry.value.amount ? "refunded" : entry.value.status };
+        }
+        paidUntil = null;
+        for (const { value: payment, invoice: invoiceId } of payments) {
+          const invoice = invoices.find(value => value.id === invoiceId);
+          if (!invoice) continue;
+          const belongsToPeriod = invoice.billing_start === start || (invoice.issued_at ?? invoice.created_at) >= start;
+          if (remote.paid_count > 0 && end > start && start > 0 && belongsToPeriod &&
+              (invoice.billing_start === start || payment.created_at >= start) && invoice.status === "paid" &&
+              invoice.amount_paid >= local.amountMinor && invoice.currency === local.currency &&
+              payment.status === "captured" && payment.amount >= local.amountMinor && payment.amount_refunded < payment.amount) {
+            const until = new Date((invoice.billing_end && invoice.billing_end > start ? Math.min(end, invoice.billing_end) : end) * 1000);
+            if (!paidUntil || until > paidUntil) paidUntil = until;
+          }
+        }
+        const currentPaymentRefunded = payments.some(({ value }) => value.status === "refunded" || value.amount_refunded >= value.amount);
         const committed = await tx.subscription.updateMany({
           where: { id, syncLeaseOwner: owner, syncLeaseUntil: { gt: this.clock() } },
           data: {
@@ -649,7 +646,7 @@ export class BillingService {
               type: event.type,
             },
           });
-      });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted });
     } finally {
       await this.db.subscription.updateMany({
         where: { id, syncLeaseOwner: owner },

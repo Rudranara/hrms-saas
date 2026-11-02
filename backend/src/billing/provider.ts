@@ -63,7 +63,12 @@ export type RemoteSubscription = z.infer<typeof subscriptionSchema>;
 export type RemotePlan = z.infer<typeof planSchema>;
 export type RemoteInvoice = z.infer<typeof invoiceSchema>;
 export type RemotePayment = z.infer<typeof paymentSchema>;
+const refundSchema = z.object({ id, payment_id: id, amount: z.number().int().positive(), currency: z.string(), status: z.enum(["pending", "processed", "failed"]), receipt: z.string().nullable().optional(), created_at: z.number().int().nonnegative(), notes: z.union([z.record(z.string(), z.string()), z.array(z.never())]).optional() });
+export type RemoteRefund = z.infer<typeof refundSchema>;
 export interface PaymentProvider {
+  createRefund?(paymentId: string, amountMinor: number, receipt: string, key: string): Promise<RemoteRefund>;
+  fetchRefund?(refundId: string): Promise<RemoteRefund>;
+  paymentRefunds?(paymentId: string): Promise<RemoteRefund[]>;
   apiConfigurationError?: ServiceError | null;
   available: boolean;
   keyId: string;
@@ -181,6 +186,7 @@ export class RazorpayProvider implements PaymentProvider {
     path: string,
     method = "GET",
     data?: unknown,
+    extraHeaders: Record<string, string> = {},
   ): Promise<unknown> {
     if (this.apiConfigurationError) throw this.apiConfigurationError;
     try {
@@ -189,6 +195,7 @@ export class RazorpayProvider implements PaymentProvider {
         headers: {
           Authorization: `Basic ${Buffer.from(`${this.keyId}:${this.secret}`).toString("base64")}`,
           "Content-Type": "application/json",
+          ...extraHeaders,
         },
         body: data === undefined ? undefined : JSON.stringify(data),
         signal: AbortSignal.timeout(8000),
@@ -214,12 +221,18 @@ export class RazorpayProvider implements PaymentProvider {
             422,
             "Razorpay could not find the requested resource (HTTP 404). Check stored provider plan IDs belong to this account and mode; no replacement plan was created automatically.",
           );
-        if (result.status === 429)
+        if (result.status === 429) {
+          const header = result.headers.get("retry-after");
+          const seconds = header === null ? NaN : Number(header);
+          const delay = Number.isFinite(seconds) ? seconds * 1000 : header ? Date.parse(header) - Date.now() : NaN;
           throw new ServiceError(
             "PROVIDER_RATE_LIMITED",
             503,
             "Razorpay rate limit reached (HTTP 429). Wait before retrying synchronization; do not clear provisioning checkpoints.",
+            Number.isFinite(delay) ? Math.max(1000, delay) : undefined,
+            "global", // No payment-specific evidence: conservatively pause the account.
           );
+        }
         throw new ServiceError(
           result.status >= 500 ? "PROVIDER_UNAVAILABLE" : "PROVIDER_REJECTED",
           result.status >= 500 ? 503 : 422,
@@ -253,6 +266,19 @@ export class RazorpayProvider implements PaymentProvider {
   }
   private safeId(value: string) {
     return id.parse(value);
+  }
+  async createRefund(paymentId: string, amountMinor: number, receipt: string, key: string) {
+    if (!Number.isSafeInteger(amountMinor) || amountMinor <= 0 || !/^[a-zA-Z0-9_-]{10,64}$/.test(key) || !/^[a-zA-Z0-9_-]{1,40}$/.test(receipt)) throw new ServiceError("INVALID_REFUND", 400, "Invalid refund amount or reference.");
+    return refundSchema.parse(await this.request(`/payments/${this.safeId(paymentId)}/refund`, "POST", { amount: amountMinor, speed: "normal", receipt, notes: { hrmsRefundReference: receipt } }, { "X-Refund-Idempotency": key }));
+  }
+  async fetchRefund(refundId: string) { return refundSchema.parse(await this.request(`/refunds/${this.safeId(refundId)}`)); }
+  async paymentRefunds(paymentId: string) {
+    const rows: RemoteRefund[] = [];
+    for (let skip = 0; skip < 10000; skip += 100) {
+      const page = z.object({ items: z.array(refundSchema) }).parse(await this.request(`/payments/${this.safeId(paymentId)}/refunds?count=100&skip=${skip}`));
+      rows.push(...page.items); if (page.items.length < 100) return rows;
+    }
+    throw new ServiceError("REFUND_REVIEW_REQUIRED", 503, "Refund history requires further reconciliation.");
   }
   async fetchPlan(value: string) {
     return planSchema.parse(await this.request(`/plans/${this.safeId(value)}`));

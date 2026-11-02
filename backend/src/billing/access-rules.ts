@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 
 export const paidStatuses = ["ACTIVE", "PENDING", "HALTED", "CANCELLED", "COMPLETED", "PAUSED"];
 // A saved admin policy overrides subscriptions created under an older policy.
-// A fresh purchase during the current trial-only policy can still activate paid access.
+// A fresh purchase under the current self-service policy can activate paid access.
 export function matchesAccessPolicy(organization: { accessMode: string; accessVersion: number }, subscription: { commercialTerms: Prisma.JsonValue | null }) {
   const terms = subscription.commercialTerms;
   return organization.accessMode !== "CONTROLLED" || !!(terms && typeof terms === "object" && !Array.isArray(terms) &&
@@ -39,6 +39,7 @@ export function verifiedPaymentSql(alias: "s" | "candidate", now: Date) {
   return Prisma.sql`${s}.lastSyncedAt IS NOT NULL AND EXISTS (
     SELECT 1 FROM BillingPayment proof WHERE proof.subscriptionId = ${s}.id
     AND proof.status = 'captured'
+    AND proof.amountRefundedMinor < proof.amountMinor
     AND proof.providerInvoiceId IS NOT NULL
     AND ((proof.captureVerifiedAt IS NOT NULL AND proof.captureVerifiedAt <= ${now})
       OR (proof.paidAt IS NOT NULL AND proof.paidAt <= ${now}))
@@ -56,5 +57,7 @@ export function graceAccessSql(alias: "s" | "candidate", now: Date, milliseconds
     AND ${verifiedPaymentSql(alias, now)}`;
 }
 export function allowsSelfServiceCheckout(organization: { accessMode: string; trialEnabled: boolean; subscriptionEnabled: boolean }) {
-  return organization.accessMode === "AUTO" || (organization.accessMode === "CONTROLLED" && organization.trialEnabled && !organization.subscriptionEnabled);
+  // Turning off an admin-assigned subscription must not require granting a
+  // free trial before the organization can purchase verified paid access.
+  return organization.accessMode === "AUTO" || (organization.accessMode === "CONTROLLED" && !organization.subscriptionEnabled);
 }

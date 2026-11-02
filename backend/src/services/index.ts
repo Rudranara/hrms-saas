@@ -5,6 +5,7 @@ import { AccessPolicy } from "../billing/access";
 import { RazorpayProvider, type PaymentProvider } from "../billing/provider";
 import { smtpMailer, type Mailer } from "./mail";
 import { systemClock, type Clock } from "./errors";
+import { RefundService } from "../billing/refunds";
 export type ServiceOverrides = {
   clock?: Clock;
   mailer?: Mailer;
@@ -17,6 +18,7 @@ export function createServices(
   overrides: ServiceOverrides = {},
 ) {
   const clock = overrides.clock ?? systemClock;
+  const billing = new BillingService(db, overrides.provider ?? new RazorpayProvider(), clock);
   return {
     clock,
     recovery: new AccountRecovery(
@@ -25,11 +27,8 @@ export function createServices(
       origin,
       clock,
     ),
-    billing: new BillingService(
-      db,
-      overrides.provider ?? new RazorpayProvider(),
-      clock,
-    ),
+    billing,
+    refunds: new RefundService(db, billing, clock),
     access: new AccessPolicy(db, clock, overrides.graceHours),
   };
 }
