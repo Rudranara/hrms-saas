@@ -1,0 +1,16 @@
+.platform-login-page { background: #edf0f8; }
+.platform-login-container { display: grid; grid-template-columns: .85fr 1.15fr; max-width: 1060px; width: 100%; border: 1px solid #dce1ef; border-radius: 18px; background: #fff; box-shadow: 0 24px 70px #202e5210; overflow: hidden; }
+.platform-login-story { padding: 42px; background: #182744; color: #f2f4ff; display: flex; flex-direction: column; justify-content: space-between; gap: 65px; }
+.platform-login-story .brand { color: #fff; flex-wrap: wrap; }
+.platform-login-story .brand small { font-size: 10px; color: #b7c8eb; letter-spacing: 1.4px; }
+.platform-login-story .eyebrow { color: #b7c8eb; }
+.platform-login-story h2 { font-size: clamp(34px, 4vw, 48px); line-height: 1.15; letter-spacing: -1.5px; margin: 22px 0; }
+.platform-login-story p { color: #c4cfe5; line-height: 1.8; font-size: 14px; }
+.platform-login-story .platform-login-restricted { border-top: 1px solid #ffffff24; padding-top: 22px; font-size: 12px; }
+.platform-login-page .auth-heading h1 { font-size: clamp(25px, 3vw, 34px); line-height: 1.2; overflow-wrap: anywhere; }
+.platform-login-notice { padding: 14px; margin-top: 22px; background: #edf0fa; border: 1px solid #dce1ef; color: #384968; border-radius: 8px; font-size: 13px; line-height: 1.6; }
+.platform-login-form input[type="password"], .platform-login-form #platform-password { padding-right: 75px; }
+.platform-login-form .auth-password-toggle { position: absolute; right: 7px; top: 7px; bottom: 7px; border: 0; border-radius: 5px; padding: 0 12px; background: #f1effc; color: #4938c6; cursor: pointer; font-size: 12px; }
+.platform-login-form .auth-password-toggle:focus-visible { outline: 3px solid #aea4fb; outline-offset: 2px; }
+@media(max-width: 760px) { .platform-login-container { grid-template-columns: 1fr; max-width: 560px; } .platform-login-story { padding: 28px; gap: 24px; } .platform-login-story h2 { font-size: 32px; } .platform-login-story .platform-login-restricted { display: none; } }
+@media(max-width: 420px) { .platform-login-page { padding: 16px; } .platform-login-story { padding: 24px; } .platform-login-page .auth-panel { padding: 28px 22px; } }

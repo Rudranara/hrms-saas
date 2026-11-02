@@ -1,0 +1,351 @@
+.platform-recovery-form .platform-recovery-actions,
+.organization-recovery-form .recovery-otp-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin-top: 20px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.platform-recovery-form .platform-recovery-resend,
+.organization-recovery-form .recovery-otp-resend {
+  font-variant-numeric: tabular-nums;
+}
+.platform-recovery-form .platform-recovery-resend:disabled,
+.organization-recovery-form .recovery-otp-resend:disabled {
+  color: #7a8194;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+.account-card-page {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  background: #f6f5fb;
+  padding: 35px 20px;
+}
+.account-card {
+  width: min(100%, 560px);
+  background: #fff;
+  padding: 38px;
+  border: 1px solid #e1e3ec;
+  border-radius: 15px;
+  box-shadow: 0 18px 60px #302a550a;
+}
+.account-card > h1 {
+  font-size: 34px;
+  line-height: 1.18;
+  letter-spacing: -1.1px;
+  margin-block: 30px 18px;
+}
+.account-description {
+  color: #596476;
+  font-size: 16px;
+  line-height: 1.8;
+}
+.account-card fieldset {
+  border: 0;
+  padding: 0;
+  min-width: 0;
+  margin: 0;
+}
+.account-success {
+  padding: 16px;
+  border: 1px solid #cce3d7;
+  background: #eef8f2;
+  color: #245b40;
+  border-radius: 8px;
+  font-size: 15px;
+  line-height: 1.8;
+  margin-block: 22px;
+}
+.account-help {
+  color: #647084;
+  font-size: 13px;
+  line-height: 1.8;
+  margin-block: 15px;
+}
+.account-help a,
+.verification-panel a,
+.billing-panel > .account-help a {
+  color: #4f46b8;
+  font-weight: 600;
+}
+.verification-panel > p:first-child {
+  margin-block: 25px;
+  font-size: 15px;
+  color: #596476;
+  line-height: 1.85;
+}
+.billing-panel {
+  margin-top: 32px;
+}
+.billing-warning,
+.billing-neutral {
+  padding: 23px;
+  border-radius: 10px;
+  margin-block: 24px;
+}
+.billing-warning {
+  background: #fff8e9;
+  border: 1px solid #eddfb9;
+  color: #705316;
+}
+.billing-neutral {
+  background: #f1effb;
+  border: 1px solid #e0dcef;
+  color: #544c75;
+}
+.billing-warning h2,
+.billing-neutral h2 {
+  margin: 0;
+  font-size: 23px;
+  line-height: 1.3;
+  letter-spacing: -0.6px;
+}
+.billing-warning p,
+.billing-neutral p {
+  margin-top: 10px;
+  font-size: 15px;
+  line-height: 1.8;
+}
+.billing-warning a,
+.billing-neutral a {
+  display: inline-block;
+  margin-top: 13px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.billing-overview {
+  background: #fff;
+  border: 1px solid #e0e4ee;
+  border-radius: 12px;
+  padding: 30px;
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr;
+  gap: 40px;
+}
+.billing-overview h2 {
+  font-size: 29px;
+  letter-spacing: -0.8px;
+  margin-block: 16px;
+  overflow-wrap: anywhere;
+}
+.billing-overview p {
+  color: #647084;
+  font-size: 14px;
+  line-height: 1.8;
+}
+.billing-overview dl {
+  margin: 0;
+  min-width: 0;
+}
+.billing-overview dl > div {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 20px;
+  padding-block: 12px;
+  border-bottom: 1px solid #ebedf4;
+  font-size: 14px;
+}
+.billing-overview dt {
+  color: #647084;
+}
+.billing-overview dd {
+  margin: 0;
+  font-weight: 550;
+  overflow-wrap: anywhere;
+}
+.billing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+  margin-block: 24px;
+}
+.billing-actions p {
+  font-size: 14px;
+  color: #647084;
+}
+.billing-panel section[aria-labelledby="billing-plans-heading"] {
+  padding-top: 55px;
+}
+.billing-panel .section-heading h2 {
+  font-size: 38px;
+}
+.billing-panel .section-heading {
+  gap: 25px;
+  align-items: flex-end;
+}
+.billing-panel .billing-toggle {
+  margin: 0;
+  flex-shrink: 0;
+}
+.billing-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+}
+.billing-plan {
+  background: #fff;
+  border: 1px solid #dedfeb;
+  border-radius: 11px;
+  padding: 25px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.billing-plan h3 {
+  font-size: 25px;
+  letter-spacing: -0.7px;
+}
+.billing-plan[data-selected] {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 1px #4f46e5;
+}
+.billing-price {
+  font-size: 25px;
+  font-weight: 650;
+  line-height: 1.35;
+  letter-spacing: -0.6px;
+  margin-block: 24px 10px;
+  overflow-wrap: anywhere;
+}
+.billing-plan > p {
+  font-size: 14px;
+  color: #647084;
+}
+.billing-plan > p.account-help {
+  font-size: 13px;
+  margin-block: 17px 25px;
+}
+.billing-plan > button {
+  margin-top: auto;
+  width: 100%;
+  font-size: 14px;
+  padding-inline: 12px;
+}
+.billing-panel button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.billing-history {
+  margin-top: 55px;
+  padding-top: 30px;
+  border-top: 1px solid #dfe3ee;
+}
+.billing-history h2 {
+  font-size: 30px;
+  letter-spacing: -0.7px;
+  margin: 0 0 25px;
+}
+.billing-history > p {
+  color: #647084;
+  font-size: 15px;
+}
+.billing-history ul {
+  list-style: none;
+  padding: 0;
+}
+.billing-history li {
+  display: flex;
+  justify-content: space-between;
+  gap: 25px;
+  padding: 18px;
+  background: #fff;
+  border-bottom: 1px solid #e6e9f1;
+}
+.billing-history li > div:last-child {
+  text-align: right;
+}
+.billing-history li strong {
+  display: block;
+  font-size: 15px;
+}
+.billing-history li span {
+  display: block;
+  font-size: 13px;
+  color: #647084;
+  margin-top: 5px;
+}
+@media (max-width: 800px) {
+  .billing-overview {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .billing-plan-grid {
+    grid-template-columns: 1fr;
+  }
+  .billing-plan {
+    padding: 28px;
+  }
+  .billing-panel .section-heading {
+    align-items: flex-start;
+  }
+  .billing-panel .section-heading h2 {
+    font-size: 34px;
+  }
+  .billing-panel .billing-toggle {
+    align-self: flex-start;
+  }
+}
+@media (max-width: 540px) {
+  .account-card {
+    padding: 28px 24px;
+  }
+  .account-card > h1 {
+    font-size: 29px;
+  }
+  .account-description {
+    font-size: 15px;
+  }
+  .account-card .button {
+    width: 100%;
+    font-size: 14px;
+    padding-inline: 15px;
+  }
+  .billing-overview {
+    padding: 23px;
+  }
+  .billing-overview dl > div {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .billing-warning,
+  .billing-neutral {
+    padding: 21px;
+  }
+  .billing-warning h2 {
+    font-size: 22px;
+  }
+  .billing-actions .button {
+    width: 100%;
+    font-size: 14px;
+  }
+  .billing-panel .section-heading h2 {
+    font-size: 32px;
+  }
+  .billing-plan {
+    padding: 25px;
+  }
+  .billing-plan h3 {
+    font-size: 26px;
+  }
+  .billing-price {
+    font-size: 27px;
+  }
+  .billing-history li {
+    padding-inline: 0;
+    gap: 15px;
+  }
+  .billing-history li strong {
+    font-size: 14px;
+  }
+  .billing-history li span {
+    font-size: 12px;
+  }
+}

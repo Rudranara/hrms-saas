@@ -1,0 +1,111 @@
+// Dedicated headless Chrome on 9223, isolated API/frontend and loopback SMTP inbox.
+// Test-only accounts are removed; no real operator is promoted or emailed.
+import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
+import { createRequire } from "node:module";
+const requireBackend = createRequire(new URL("../../backend/package.json", import.meta.url));
+requireBackend("dotenv").config({ path: new URL("../../backend/.env", import.meta.url), quiet: true });
+if (process.env.NODE_ENV === "production") throw new Error("Development fixtures only.");
+const { PrismaClient } = requireBackend("@prisma/client");
+const { hashPassword } = requireBackend("./dist/auth/password.js");
+const db = new PrismaClient(), run = randomUUID(), origin = process.env.UI_TEST_ORIGIN || "http://localhost:3001";
+const email = `settings-${run}@example.test`, nextEmail = `updated-${run}@example.test`, tenantEmail = `tenant-${run}@example.test`;
+const password = `Settings browser passphrase ${run}`;
+let orgId, adminId, otherAdminId, socket;
+const duplicateEmail = `duplicate-${run}@example.test`;
+const exceptions = [], pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+try {
+  const hash = await hashPassword(password);
+  const org = await db.organization.create({ data: { name: `Settings browser ${run}`, trialStartedAt: new Date(), trialExpiresAt: new Date(Date.now() + 7 * 86400000) } }); orgId = org.id;
+  adminId = (await db.superAdmin.create({ data: { fullName: "Settings Browser Operator", email, passwordHash: hash, emailVerifiedAt: new Date() } })).id;
+  await db.user.create({ data: { organizationId: orgId, fullName: "Settings Browser Tenant", email: tenantEmail, passwordHash: hash, role: "ORGANIZATION_ADMIN" } });
+  otherAdminId = (await db.superAdmin.create({ data: { fullName: "Other Settings Operator", email: duplicateEmail, passwordHash: hash } })).id;
+  const tabs = await fetch("http://localhost:9223/json/list").then((response) => response.json());
+  socket = new WebSocket(tabs.find((tab) => tab.type === "page").webSocketDebuggerUrl);
+  await new Promise((resolve) => socket.addEventListener("open", resolve, { once: true }));
+  let sequence = 0; const pending = new Map();
+  const command = (method, params = {}) => new Promise((resolve, reject) => { const id = ++sequence; pending.set(id, { resolve, reject }); socket.send(JSON.stringify({ id, method, params })); });
+  socket.addEventListener("message", (event) => { const message = JSON.parse(event.data); if (message.id) { const item = pending.get(message.id); pending.delete(message.id); if (message.error) item.reject(new Error(message.error.message)); else item.resolve(message.result); } else if (message.method === "Runtime.exceptionThrown") exceptions.push(message.params.exceptionDetails.text); });
+  const evaluate = async (expression) => { const result = await command("Runtime.evaluate", { expression, awaitPromise: true, returnByValue: true }); if (result.exceptionDetails) throw new Error("Settings browser evaluation failed"); return result.result.value; };
+  const until = async (expression, label, attempts = 180) => { for (let i = 0; i < attempts; i++) { if (await evaluate(expression)) return; await pause(100); } throw new Error(`Timed out: ${label}`); };
+  const navigate = async (path) => { await command("Page.navigate", { url: origin + path }); await until("document.readyState==='complete'", "page load"); await pause(450); };
+  const submit = async (selector, values) => { await until(`(()=>{const form=document.querySelector(${JSON.stringify(selector)});return !!form && Object.keys(form).some(key=>key.startsWith('__reactProps$') && typeof form[key]?.onSubmit==='function');})()`, "interactive form ready"); await evaluate(`(()=>{const form=document.querySelector(${JSON.stringify(selector)});for(const [name,value] of Object.entries(${JSON.stringify(values)})){form.elements[name].value=value;form.elements[name].dispatchEvent(new Event('input',{bubbles:true}));}form.requestSubmit();})()`); };
+  const login = async (address, pass = password) => { await navigate("/super-admin/login?next=%2Fsuper-admin%2Fsettings"); await submit("form", { email: address, password: pass }); };
+  const loaded = () => until("!!document.querySelector('.platform-settings-grid')", "account loaded");
+  const error = (text) => until(`!!document.querySelector('[role="alert"]') && document.querySelector('[role="alert"]').textContent.includes(${JSON.stringify(text)})`, "expected validation error");
+  const emailForm = ".settings-email form", confirmForm = ".settings-otp-form";
+  await command("Page.enable"); await command("Runtime.enable"); await command("Network.enable");
+  await command("Network.deleteCookies", { name: "hrms_platform_session", url: origin });
+  await command("Network.deleteCookies", { name: "hrms_session", url: origin });
+  await navigate("/super-admin/settings"); await until("location.pathname==='/super-admin/login'", "unauthenticated settings guard");
+  assert.equal(await evaluate("new URLSearchParams(location.search).get('next')"), "/super-admin/settings");
+  assert.equal(await evaluate("fetch('/api/super-admin/account').then(r=>r.status)"), 401);
+  await submit("form", { email: tenantEmail, password }); await error("Unable to sign in");
+  await navigate("/login"); await submit("form", { email: tenantEmail, password }); await until("location.pathname==='/dashboard'", "ordinary login still works");
+  await navigate("/super-admin/settings"); await until("location.pathname==='/super-admin/login'", "tenant page denial");
+  assert.equal(await evaluate("fetch('/api/super-admin/account').then(r=>r.status)"), 401);
+  assert.equal(await evaluate("fetch('/api/super-admin/account/password',{method:'POST',headers:{'Content-Type':'application/json','X-HRMS-Request':'1'},body:'{}'}).then(r=>r.status)"), 401);
+  await login(email); await loaded();
+  assert.equal(await evaluate("location.pathname"), "/super-admin/settings");
+  assert.equal(await evaluate("!!Array.from(document.querySelectorAll('header a')).find(a=>a.textContent==='Account Settings')"), true);
+  assert.equal(await evaluate(`document.body.textContent.includes(${JSON.stringify(email)}) && document.body.textContent.includes('Verified')`), true);
+  assert.equal(await evaluate("!document.body.textContent.includes('Change password') && !document.querySelector('input[name=\"newPassword\"]')"), true, "Settings does not expose password changes");
+  for (const width of [320, 390, 768, 1440]) { await command("Emulation.setDeviceMetricsOverride", { width, height: 1000, deviceScaleFactor: 1, mobile: width < 768 }); await pause(120); assert.equal(await evaluate("document.documentElement.scrollWidth<=innerWidth"), true, `Settings overflow at ${width}`); }
+  await submit(emailForm, { currentPassword: "wrong password", newEmail: nextEmail }); await error("current password is incorrect");
+  assert.equal(await evaluate("!!document.querySelector('.settings-otp-form')"), false);
+  await submit(emailForm, { currentPassword: password, newEmail: duplicateEmail }); await error("cannot be used");
+  await submit(emailForm, { currentPassword: password, newEmail: nextEmail });
+  await until("!!document.querySelector('.settings-otp-form') && document.body.textContent.includes('new address is not active or verified yet')", "OTP form appears while current email stays active");
+  assert.equal(await evaluate("!!document.querySelector('input[name=\"currentPassword\"]')"), false, "Password is not retained during OTP verification");
+  assert.equal(await evaluate("document.querySelector('.settings-resend').disabled && /Resend OTP in [01]:[0-9]{2}/.test(document.querySelector('.settings-resend').textContent)"), true, "Resend starts disabled with a visible countdown");
+  await evaluate("Array.from(document.querySelectorAll('.settings-otp-actions button')).find(button=>button.textContent==='Change email').click()");
+  await until("!!document.querySelector('input[name=\"newEmail\"]') && !document.querySelector('.settings-otp-form')", "Change email returns to editable email form");
+  assert.equal(await evaluate("document.querySelector('input[name=\"currentPassword\"]').value"), "");
+  const previousRequest = await db.superAdminEmailChange.findUniqueOrThrow({ where: { superAdminId: adminId } });
+  await submit(emailForm, { currentPassword: password, newEmail: nextEmail });
+  await until("!!document.querySelector('.settings-otp-form')", "Fresh email submission returns immediately to OTP verification");
+  assert.notEqual((await db.superAdminEmailChange.findUniqueOrThrow({ where: { superAdminId: adminId } })).otpRequestId, previousRequest.otpRequestId, "Fresh submission sends a new OTP before the resend cooldown expires");
+  const unchanged = await db.superAdmin.findUniqueOrThrow({ where: { id: adminId } }); assert.equal(unchanged.email, email);
+  const inbox = await fetch("http://127.0.0.1:8025").then((response) => response.text());
+  const messagePath = inbox.match(/href="(\/\?message=[^"]+)"/)?.[1]; assert.ok(messagePath, "SMTP received a message");
+  const message = await fetch("http://127.0.0.1:8025" + messagePath).then((response) => response.text());
+  let code = message.match(/verification code is: (\d{6})/)?.[1]; assert.ok(code, "Received six-digit OTP through loopback SMTP");
+  assert.ok(message.includes(nextEmail));
+  const cookieBefore = (await command("Network.getCookies", { urls: [origin] })).cookies.find((item) => item.name === "hrms_platform_session").value;
+  await submit(confirmForm, { code: code === "000000" ? "000001" : "000000" }); await error("code is incorrect");
+  assert.equal((await db.superAdmin.findUniqueOrThrow({ where: { id: adminId } })).email, email);
+  // OTP entry resumes after signing in again using the current email.
+  await command("Network.deleteCookies", { name: "hrms_platform_session", url: origin });
+  await navigate("/pricing");
+  await navigate("/super-admin/settings"); await until("location.pathname==='/super-admin/login'", "OTP confirmation requires a platform session");
+  await submit("form", { email, password }); await loaded();
+  await until("!!document.querySelector('.settings-otp-form')", "OTP form resumes after sign-in");
+  for (const width of [320, 390, 768, 1440]) { await command("Emulation.setDeviceMetricsOverride", { width, height: 1000, deviceScaleFactor: 1, mobile: width < 768 }); await pause(120); assert.equal(await evaluate("document.documentElement.scrollWidth<=innerWidth"), true, `OTP form overflow at ${width}`); }
+  assert.equal(await evaluate("document.querySelector('.settings-resend').disabled"), true, "Cooldown survives navigating away and signing in again");
+  await until("!!document.querySelector('.settings-resend') && !document.querySelector('.settings-resend').disabled", "Resend becomes enabled after one minute", 900);
+  await evaluate("document.querySelector('.settings-resend').click()");
+  await until("document.querySelector('.settings-resend').disabled && /Resend OTP in/.test(document.querySelector('.settings-resend').textContent)", "Resend stays on OTP screen and restarts cooldown");
+  const resentInbox = await fetch("http://127.0.0.1:8025").then((response) => response.text());
+  const resentPath = resentInbox.match(/href="(\/\?message=[^"]+)"/)?.[1]; assert.ok(resentPath); assert.notEqual(resentPath, messagePath, "Resend delivers a new message");
+  const resentMessage = await fetch("http://127.0.0.1:8025" + resentPath).then((response) => response.text());
+  code = resentMessage.match(/verification code is: (\d{6})/)?.[1]; assert.ok(code);
+  await submit(confirmForm, { code }); await until("document.body.textContent.includes('Account updated')", "email confirmed with explicit re-login");
+  const changed = await db.superAdmin.findUniqueOrThrow({ where: { id: adminId } }); assert.equal(changed.email, nextEmail); assert.ok(changed.emailVerifiedAt);
+  assert.equal(await db.superAdminSession.count({ where: { superAdminId: adminId } }), 0);
+  assert.equal(await fetch("http://localhost:4001/api/super-admin/auth/me", { headers: { Cookie: `hrms_platform_session=${cookieBefore}` } }).then((response) => response.status), 401);
+  await evaluate("document.querySelector('.platform-detail a.button').click()"); await until("location.pathname==='/super-admin/login' && !!document.querySelector('form')", "email change sign-in link");
+  await submit("form", { email: nextEmail, password }); await loaded();
+  await until("document.body.textContent.includes('Email changed and verified')", "own audit activity");
+  assert.equal((await db.organization.findUniqueOrThrow({ where: { id: orgId } })).trialExpiresAt.getTime(), org.trialExpiresAt.getTime());
+  assert.equal(await evaluate("fetch('/api/auth/me').then(r=>r.status)"), 200, "Tenant session remains independent after platform credential changes");
+  assert.deepEqual(exceptions, []);
+  console.log(JSON.stringify({ passed: true, checks: ["anonymous redirect and safe continuation", "tenant page/API denial", "Super Admin login", "navigation", "password changes absent from settings", "4 responsive widths for email and OTP steps", "wrong password cannot request OTP", "duplicate email", "real loopback SMTP OTP delivery", "separate change-email action", "disabled resend countdown", "cooldown survives navigation", "resend enabled after one minute", "direct resend delivers OTP and resets countdown", "unverified replacement stays inactive", "incorrect OTP rejected", "OTP entry resumes after sign-in", "successful OTP update and session revocation", "email sign-in", "safe audit history", "trial unchanged", "no browser exceptions"] }));
+} finally {
+  if (socket) socket.close();
+  if (adminId) {
+    await db.superAdminAuditEvent.deleteMany({ where: { actorSuperAdminId: { in: [adminId, otherAdminId].filter(Boolean) } } });
+    await db.superAdmin.deleteMany({ where: { id: { in: [adminId, otherAdminId].filter(Boolean) } } });
+  }
+  if (orgId) await db.organization.delete({ where: { id: orgId } });
+  await db.$disconnect();
+}

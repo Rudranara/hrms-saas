@@ -1,0 +1,66 @@
+.organization-detail-page .platform-page { background: #f6f7fb; color: #243047; }
+.organization-detail-page .workspace-content { max-width: 1240px; }
+.organization-detail-page .platform-intro { padding: 32px 0 24px; }
+.organization-detail-page .platform-intro h1 { font-size: clamp(28px, 3vw, 36px); letter-spacing: -.035em; margin-top: 10px; }
+.organization-detail-page .platform-intro > p { font-size: 14px; line-height: 1.7; margin: 10px 0 14px; }
+.organization-detail-page .platform-scope { font-size: 11px; background: #eeedf8; color: #625c89; }
+.organization-detail-panel { gap: 24px; }
+.organization-detail-panel .organization-back-link { width: fit-content; font-size: 13px; font-weight: 600; color: #5e6581; padding: 4px 0; text-decoration: none; }
+.organization-detail-panel .organization-back-link:hover { color: #5041c9; }
+.organization-detail-panel > section { border: 1px solid #e1e5ee; border-radius: 16px; padding: 28px; background: #fff; box-shadow: 0 3px 14px #26335204; }
+.organization-detail-panel .eyebrow { font-size: 10px; font-weight: 700; letter-spacing: .13em; color: #7166a6; }
+.organization-detail-panel h2 { font-size: 21px; line-height: 1.4; letter-spacing: -.025em; margin: 6px 0 12px; }
+.organization-detail-panel > .platform-detail:first-of-type > h2 { font-size: 25px; margin-bottom: 4px; }
+.organization-detail-panel > .platform-detail:first-of-type > p:not(.account-help) { font-size: 12px; color: #7c879a; margin-bottom: 16px; overflow-wrap: anywhere; }
+.organization-detail-panel .platform-badge { border-radius: 6px; font-size: 11px; line-height: 1.5; padding: 5px 10px; }
+.organization-detail-panel > .platform-detail:first-of-type > dl { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px 28px; padding: 24px 0; border-top: 1px solid #edf0f5; border-bottom: 1px solid #edf0f5; margin-top: 24px; }
+.organization-detail-panel dt { font-size: 12px; color: #788296; margin-bottom: 8px; }
+.organization-detail-panel dd { font-size: 13px; line-height: 1.75; font-weight: 500; color: #303d53; }
+.organization-detail-panel .account-help { color: #778197; font-size: 12px; line-height: 1.8; }
+.organization-detail-panel .organization-access-title { gap: 12px; }
+.organization-detail-panel .organization-access-title h2 { margin-bottom: 0; }
+.organization-detail-panel .organization-access-panel > .account-help[role="status"] { display: inline-flex; flex-wrap: wrap; gap: 5px; padding: 8px 12px; border-radius: 7px; background: #f3f5fa; color: #4d5970; margin-top: 16px; }
+.organization-detail-panel .organization-access-options { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: stretch; }
+.organization-detail-panel .organization-access-option { padding: 22px; border-radius: 12px; border-color: #e3e7ef; background: #fafbfc; }
+.organization-detail-panel .organization-access-option[data-enabled="true"] { background: #fcfbff; border-color: #cfc7ef; box-shadow: 0 0 0 1px #e9e4fb44; }
+.organization-detail-panel .organization-access-option-heading { align-items: flex-start; gap: 14px; }
+.organization-detail-panel .organization-access-option h3 { font-size: 15px; line-height: 1.6; font-weight: 650; color: #29334b; }
+.organization-detail-panel .organization-access-option p { color: #7a8496; line-height: 1.7; margin-top: 5px; }
+.organization-detail-panel .organization-access-switch { padding-top: 0; min-height: 44px; align-items: flex-start; line-height: 24px; font-size: 11px; min-width: 68px; }
+.organization-detail-panel .organization-access-switch > span { flex-shrink: 0; }
+.organization-detail-panel .organization-access-fields { gap: 14px; }
+.organization-detail-panel .organization-access-option .auth-field { margin-top: 22px; }
+.organization-detail-panel .organization-access-panel label { font-size: 12px; font-weight: 600; color: #526078; }
+.organization-detail-panel .organization-access-panel input,
+.organization-detail-panel .organization-access-panel select { width: 100%; min-height: 44px; border-radius: 8px; border: 1px solid #dce1ec; background: #fff; font-size: 13px; padding: 10px 12px; color: #334058; box-shadow: 0 1px 2px #26335203; }
+.organization-detail-panel .organization-access-form > fieldset > .auth-field-help { font-size: 11px; color: #818a9a; margin: 16px 0 22px; }
+.organization-detail-panel .button { border-radius: 8px; min-height: 42px; padding: 11px 19px; font-size: 12px; font-weight: 600; }
+.organization-detail-panel .button.primary { background: #5545d7; box-shadow: 0 3px 7px #5545d71a; }
+.organization-detail-panel .button.primary:hover { background: #4636bf; }
+.organization-detail-panel .button.primary:disabled { opacity: .6; }
+.organization-detail-panel .organization-access-history { margin-top: 24px; padding-top: 18px; border-color: #edf0f5; }
+.organization-detail-panel .organization-access-history > summary { color: #5d6680; font-weight: 600; font-size: 12px; margin: 0; padding: 8px 0; }
+.organization-detail-panel > section:not(.platform-detail) > h2 { font-size: 18px; margin: 0 0 20px; }
+.organization-detail-panel .platform-table-scroll { border-radius: 10px; border-color: #e6e9f1; }
+.organization-detail-panel .platform-table { min-width: 760px; }
+.organization-detail-panel .platform-table th { background: #f6f7fa; color: #758096; font-size: 11px; font-weight: 600; padding: 14px 18px; }
+.organization-detail-panel .platform-table td { color: #39465d; padding: 18px; border-color: #eff1f6; }
+.organization-detail-panel .platform-table tbody tr:hover { background: #fcfcfe; }
+.organization-detail-panel .organization-access-audit-table { min-width: 520px; }
+.organization-detail-panel .platform-pager { padding: 18px 0 0; font-size: 11px; color: #818a9a; }
+.organization-detail-panel .platform-empty { background: #fafbfe; border-color: #e0e5ef; color: #818a9a; font-size: 13px; text-align: center; padding: 32px 18px; }
+@media (max-width: 1000px) {
+  .organization-detail-panel > .platform-detail:first-of-type > dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .organization-detail-panel .organization-access-options { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 600px) {
+  .organization-detail-page .platform-intro { padding-top: 22px; }
+  .organization-detail-panel { gap: 18px; }
+  .organization-detail-panel > section { border-radius: 12px; padding: 20px 16px; }
+  .organization-detail-panel > .platform-detail:first-of-type > dl { grid-template-columns: minmax(0, 1fr); gap: 18px; padding: 20px 0; }
+  .organization-detail-panel .organization-access-option { padding: 18px 14px; }
+  .organization-detail-panel .organization-access-option-heading { gap: 10px; }
+  .organization-detail-panel .organization-access-fields { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .organization-detail-panel .organization-access-panel input { font-size: 16px; }
+  .organization-detail-panel .organization-access-form > fieldset > button { width: 100%; }
+}

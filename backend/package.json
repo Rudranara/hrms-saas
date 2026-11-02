@@ -1,0 +1,43 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "tsx watch src/app.ts",
+    "build": "tsc",
+    "start": "node dist/app.js",
+    "test": "node --import tsx --test --test-concurrency=1 test/auth.test.ts test/registration.test.ts test/lifecycle.test.ts test/provider.test.ts test/smtp.test.ts test/plan-sync.test.ts test/continuation.test.ts test/super-admin.test.ts test/organization-access.test.ts test/auth-redirects.test.ts test/super-admin-account.test.ts test/super-admin-management.test.ts test/platform-auth.test.ts test/platform-recovery.test.ts",
+    "billing:sync-plans": "tsx scripts/sync-plans.ts",
+    "billing:reconcile": "tsx scripts/reconcile-billing.ts",
+    "test:billing-audit": "tsx scripts/verify-billing-audit.ts",
+    "mail:local": "tsx scripts/local-mail.ts",
+    "mail:check": "tsx scripts/check-mail.ts",
+    "admin:provision": "tsx scripts/provision-super-admin.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.8",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.1",
+    "helmet": "^8.3.0",
+    "nodemailer": "^10.2.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.5",
+    "@types/nodemailer": "^8.0.2",
+    "@types/smtp-server": "^3.5.13",
+    "prisma": "^6.19.3",
+    "smtp-server": "^3.21.1",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}

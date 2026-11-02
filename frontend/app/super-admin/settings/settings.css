@@ -1,0 +1,498 @@
+.platform-settings-page .platform-page {
+  background: #f7f8fc;
+  color: #20283d;
+}
+
+.platform-settings-page .workspace-header {
+  min-height: 80px;
+}
+
+.platform-settings-page .platform-session > a {
+  padding: 9px 13px;
+  border-radius: 7px;
+  background: #eeecfc;
+  color: #5143bc;
+}
+
+.platform-settings-page .workspace-content {
+  max-width: 1160px;
+  padding-block: 34px 60px;
+}
+
+.platform-settings-page .platform-intro {
+  padding: 0 0 26px;
+}
+
+.platform-settings-page .platform-intro > .eyebrow {
+  color: #7b8195;
+  font-size: 10px;
+  letter-spacing: .12em;
+}
+
+.platform-settings-page .platform-intro h1 {
+  margin: 10px 0 0;
+  font-size: clamp(28px, 3vw, 34px);
+  letter-spacing: -.035em;
+  line-height: 1.25;
+}
+
+.platform-settings-page .platform-intro p {
+  margin: 10px 0 16px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.platform-settings-page .platform-scope {
+  background: #eeeff5;
+  color: #666d82;
+  font-size: 11px;
+  padding: 7px 10px;
+}
+
+.platform-settings-page .platform-settings {
+  grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+  padding-bottom: 0;
+}
+
+.platform-settings-page .platform-settings > * {
+  grid-column: 1 / -1;
+}
+
+.platform-settings-page .platform-settings > .platform-settings-grid {
+  grid-column: 1;
+  display: block;
+}
+
+.platform-settings-page .platform-settings > .settings-activity {
+  grid-column: 2;
+}
+
+.platform-settings-page .settings-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-self: start;
+  color: #636b80;
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: -4px;
+}
+
+.platform-settings-page .settings-back svg {
+  width: 15px;
+  height: 15px;
+  transform: rotate(180deg);
+}
+
+.platform-settings-page .settings-back:hover {
+  color: #5143bc;
+}
+
+.platform-settings-page .platform-detail {
+  padding: 28px;
+  border: 1px solid #e3e6ee;
+  border-radius: 14px;
+  box-shadow: 0 2px 4px #20283d03, 0 8px 24px #20283d02;
+}
+
+.platform-settings-page .platform-settings .eyebrow {
+  color: #7a8194;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: .1em;
+}
+
+.platform-settings-page .platform-detail h2 {
+  margin: 5px 0 0;
+  font-size: 19px;
+  font-weight: 650;
+  letter-spacing: -.025em;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.platform-settings-page .settings-profile {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: 24px 32px;
+}
+
+.platform-settings-page .settings-identity {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.platform-settings-page .settings-identity > div {
+  min-width: 0;
+}
+
+.platform-settings-page .settings-avatar {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  flex-shrink: 0;
+  border: 1px solid #e1dcfa;
+  border-radius: 16px;
+  background: #f1eefc;
+  color: #6550bc;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -.04em;
+}
+
+.platform-settings-page .settings-role {
+  display: block;
+  margin-top: 5px;
+  font-size: 12px;
+  color: #747c90;
+}
+
+.platform-settings-page .settings-profile dl {
+  margin: 0;
+  align-self: center;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 24px;
+  padding-left: 30px;
+  border-left: 1px solid #eceef4;
+}
+
+.platform-settings-page .settings-profile dt {
+  font-size: 11px;
+  margin-bottom: 9px;
+}
+
+.platform-settings-page .settings-profile dd {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.65;
+}
+
+.platform-settings-page .settings-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 5px;
+  padding: 2px 7px;
+  background: #fff4df;
+  color: #8a6125;
+  font-size: 11px;
+}
+
+.platform-settings-page .settings-status[data-verified="true"] {
+  background: #edf8f1;
+  color: #26704c;
+}
+
+.platform-settings-page .settings-status svg {
+  width: 12px;
+  height: 12px;
+}
+
+.platform-settings-page .settings-verified-date {
+  display: block;
+  color: #7c8395;
+  font-size: 11px;
+  font-weight: 400;
+  margin-top: 5px;
+}
+
+.platform-settings-page .settings-profile > .account-help {
+  grid-column: 1 / -1;
+  margin: 0;
+  border-top: 1px solid #eceef4;
+  padding-top: 17px;
+  font-size: 12px;
+  color: #7a8192;
+}
+
+.platform-settings-page .settings-card-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 17px;
+}
+
+.platform-settings-page .settings-card-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border: 1px solid #e8e5f5;
+  border-radius: 10px;
+  background: #f7f5fd;
+  color: #7665b5;
+}
+
+.platform-settings-page .platform-settings .platform-detail > p {
+  font-size: 12px;
+  line-height: 1.85;
+  color: #71798d;
+}
+
+.platform-settings-page .platform-settings .auth-form {
+  margin-top: 25px;
+}
+
+.platform-settings-page .auth-field {
+  margin-bottom: 20px;
+}
+
+.platform-settings-page .auth-field label {
+  font-size: 12px;
+  font-weight: 550;
+  color: #3c455b;
+  gap: 9px;
+}
+
+.platform-settings-page .auth-field input {
+  min-height: 44px;
+  padding: 11px 13px;
+  border: 1px solid #dce0ea;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 400;
+  box-shadow: 0 1px 2px #20283d03;
+}
+
+.platform-settings-page .auth-field input:hover:not(:disabled) {
+  border-color: #b5b9ca;
+}
+
+.platform-settings-page .auth-field input:focus-visible {
+  border-color: #8271ce;
+  outline: 3px solid #ede9fb;
+  outline-offset: 1px;
+}
+
+.platform-settings-page .platform-settings .button.primary {
+  min-height: 43px;
+  padding: 11px 17px;
+  border-radius: 8px;
+  background: #5947c7;
+  border: 1px solid #5947c7;
+  box-shadow: 0 2px 3px #41308d15;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.platform-settings-page .platform-settings .button.primary:hover:not(:disabled) {
+  background: #4937b0;
+  border-color: #4937b0;
+}
+
+.platform-settings-page fieldset:disabled .button,
+.platform-settings-page fieldset:disabled input {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.platform-settings-page .settings-activity > .account-help {
+  margin: 0;
+}
+
+.platform-settings-page .platform-audit-list {
+  margin: 22px 0 0;
+}
+
+.platform-settings-page .platform-audit-list li {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr);
+  gap: 5px 12px;
+  padding: 17px 0;
+  border-color: #edf0f5;
+}
+
+.platform-settings-page .settings-event-dot {
+  height: 7px;
+  width: 7px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: #a79bd6;
+  box-shadow: 0 0 0 3px #f4f1fc;
+}
+
+.platform-settings-page .platform-audit-list strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 550;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.platform-settings-page .platform-audit-list small {
+  color: #81889a;
+  font-size: 11px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.platform-settings-page .platform-audit-list time {
+  grid-column: 2;
+  color: #8a90a0;
+  font-size: 10px;
+  white-space: normal;
+}
+
+.platform-settings-page .settings-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 12px;
+  margin-top: 24px;
+  border: 1px dashed #e2e5ed;
+  border-radius: 10px;
+  background: #fcfcfe;
+  text-align: center;
+}
+
+.platform-settings-page .settings-empty-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid #e9ebf2;
+  border-radius: 50%;
+  color: #969cb0;
+  background: white;
+  margin-bottom: 14px;
+}
+
+.platform-settings-page .settings-empty p {
+  color: #566077;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+.platform-settings-page .settings-empty > span:last-child {
+  color: #9097a8;
+  font-size: 11px;
+  line-height: 1.7;
+  margin-top: 5px;
+}
+
+.platform-settings-page .platform-settings .billing-neutral,
+.platform-settings-page .platform-settings .billing-warning,
+.platform-settings-page .platform-settings > .account-success,
+.platform-settings-page .platform-settings > .auth-alert {
+  margin-block: 0;
+  padding: 14px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+.platform-settings-page .platform-settings .billing-neutral,
+.platform-settings-page .platform-settings .billing-warning {
+  margin-top: 18px;
+}
+
+.platform-settings-page .platform-settings .billing-neutral p {
+  font-size: 12px;
+}
+
+.platform-settings-page .settings-otp-form input[name="code"] {
+  max-width: 240px;
+  font-size: 22px;
+  letter-spacing: .35em;
+  font-variant-numeric: tabular-nums;
+}
+
+.platform-settings-page .settings-otp-back {
+  display: block;
+  margin-top: 18px;
+  font-size: 12px;
+  text-align: left;
+  line-height: 1.7;
+}
+
+.platform-settings-page .settings-otp-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin-top: 20px;
+}
+
+.platform-settings-page .settings-otp-actions .button-link {
+  font-size: 12px;
+  line-height: 1.7;
+  text-align: left;
+}
+
+.platform-settings-page .settings-resend {
+  font-variant-numeric: tabular-nums;
+}
+
+.platform-settings-page .settings-resend:disabled {
+  color: #7a8194;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+@media (max-width: 800px) {
+  .platform-settings-page .settings-profile {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+
+  .platform-settings-page .settings-profile dl {
+    padding: 20px 0 0;
+    border-left: 0;
+    border-top: 1px solid #eceef4;
+  }
+
+  .platform-settings-page .platform-settings {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .platform-settings-page .platform-settings > .settings-activity {
+    grid-column: 1;
+  }
+}
+
+@media (max-width: 520px) {
+  .platform-settings-page .workspace-content {
+    padding-block: 26px 36px;
+  }
+
+  .platform-settings-page .platform-detail {
+    padding: 21px;
+    border-radius: 12px;
+  }
+
+  .platform-settings-page .platform-settings {
+    gap: 18px;
+  }
+
+  .platform-settings-page .settings-profile dl {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .platform-settings-page .settings-profile h2 {
+    font-size: 18px;
+  }
+
+  .platform-settings-page .settings-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 13px;
+    font-size: 17px;
+  }
+
+  .platform-settings-page .platform-settings .button.primary {
+    width: 100%;
+  }
+
+  .platform-settings-page .auth-field input {
+    font-size: 16px;
+  }
+}

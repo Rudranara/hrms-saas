@@ -1,0 +1,62 @@
+[
+  {
+    "id": "essentials-monthly",
+    "name": "Essentials",
+    "interval": "MONTHLY",
+    "amountMinor": 99900,
+    "currency": "INR",
+    "providerPlanId": null,
+    "totalCount": 12,
+    "enabled": true
+  },
+  {
+    "id": "essentials-yearly",
+    "name": "Essentials",
+    "interval": "YEARLY",
+    "amountMinor": 999000,
+    "currency": "INR",
+    "providerPlanId": null,
+    "totalCount": 12,
+    "enabled": true
+  },
+  {
+    "id": "growth-monthly",
+    "name": "Growth",
+    "interval": "MONTHLY",
+    "amountMinor": 199900,
+    "currency": "INR",
+    "providerPlanId": null,
+    "totalCount": 12,
+    "enabled": true
+  },
+  {
+    "id": "growth-yearly",
+    "name": "Growth",
+    "interval": "YEARLY",
+    "amountMinor": 1999000,
+    "currency": "INR",
+    "providerPlanId": null,
+    "totalCount": 12,
+    "enabled": true
+  },
+  {
+    "id": "organization-monthly",
+    "name": "Organization",
+    "interval": "MONTHLY",
+    "amountMinor": 399900,
+    "currency": "INR",
+    "providerPlanId": null,
+    "totalCount": 12,
+    "enabled": true
+  },
+  {
+    "id": "organization-yearly",
+    "name": "Organization",
+    "interval": "YEARLY",
+    "amountMinor": 3999000,
+    "currency": "INR",
+    "providerPlanId": null,
+    "totalCount": 12,
+    "enabled": true
+  }
+]

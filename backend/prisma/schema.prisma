@@ -1,0 +1,364 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id             String         @id @default(cuid())
+  name           String
+  phoneNumber    String? @db.VarChar(16)
+  employeeSize   String? @db.VarChar(16)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  trialStartedAt DateTime?
+  trialExpiresAt DateTime?
+  accessMode     String         @default("AUTO") @db.VarChar(16)
+  trialEnabled Boolean @default(false)
+  subscriptionEnabled Boolean @default(false)
+  manualAccessStartsAt DateTime?
+  manualAccessExpiresAt DateTime?
+  manualAccessPlan Json?
+  accessVersion  Int            @default(0)
+  users          User[]
+  subscriptions  Subscription[]
+  billingQuotes BillingQuote[]
+  billingReplacements BillingReplacement[]
+}
+
+enum UserRole {
+  ORGANIZATION_ADMIN
+  EMPLOYEE
+  SUPER_ADMIN
+}
+
+model PendingRegistration {
+  id String @id @default(cuid())
+  tokenHash String @unique @db.Char(64)
+  organizationName String @db.VarChar(120)
+  fullName String @db.VarChar(120)
+  phoneNumber String? @db.VarChar(16)
+  employeeSize String? @db.VarChar(16)
+  email String @db.VarChar(254)
+  passwordHash String @db.VarChar(255)
+  codeHash String @db.Char(64)
+  failedAttempts Int @default(0)
+  createdAt DateTime @default(now())
+  sentAt DateTime
+  expiresAt DateTime
+  @@index([email, createdAt])
+  @@index([expiresAt])
+}
+
+model User {
+  id              String         @id @default(cuid())
+  organizationId  String
+  organization    Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  fullName        String         @db.VarChar(120)
+  email           String         @unique @db.VarChar(254)
+  passwordHash    String         @db.VarChar(255)
+  role            UserRole       @default(EMPLOYEE)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  sessions        Session[]
+  emailVerifiedAt DateTime?
+  authVersion     Int            @default(0)
+  accountTokens   AccountToken[]
+  adminEmailChange AdminEmailChange?
+
+  @@index([organizationId])
+}
+
+// Separate from User.email: requesting a replacement never changes login/recovery.
+model AdminEmailChange {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  newEmail    String   @db.VarChar(254)
+  tokenHash   String   @unique @db.Char(64)
+  authVersion Int
+  state       String   @db.VarChar(24)
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime
+  consumedAt  DateTime?
+
+  @@index([expiresAt])
+}
+
+// No request bodies/metadata fields: credentials and tokens cannot enter this log.
+// Actor IDs intentionally survive account deletion; audit records do not cascade.
+model AdminAuditEvent {
+  id          String   @id @default(cuid())
+  actorUserId String
+  action      String   @db.VarChar(40)
+  outcome     String   @db.VarChar(16)
+  reasonCode  String?  @db.VarChar(40)
+  createdAt   DateTime @default(now())
+
+  @@index([actorUserId, createdAt])
+}
+
+// Platform identities deliberately have no relationship to User or Organization.
+model SuperAdmin {
+  id              String @id @default(cuid())
+  fullName        String @db.VarChar(120)
+  email           String @unique @db.VarChar(254)
+  passwordHash    String @db.VarChar(255)
+  isActive        Boolean @default(true)
+  authVersion     Int @default(0)
+  emailVerifiedAt DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  sessions        SuperAdminSession[]
+  emailChange     SuperAdminEmailChange?
+  passwordReset   SuperAdminPasswordReset?
+}
+
+model SuperAdminSession {
+  id           String @id @default(cuid())
+  tokenHash    String @unique @db.Char(64)
+  superAdminId String
+  superAdmin   SuperAdmin @relation(fields: [superAdminId], references: [id], onDelete: Cascade)
+  authVersion  Int @default(0)
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  @@index([superAdminId])
+  @@index([expiresAt])
+}
+
+model SuperAdminEmailChange {
+  id           String @id @default(cuid())
+  superAdminId String @unique
+  superAdmin   SuperAdmin @relation(fields: [superAdminId], references: [id], onDelete: Cascade)
+  newEmail     String @db.VarChar(254)
+  tokenHash    String @unique @db.Char(64)
+  otpRequestId String? @db.Char(64)
+  failedAttempts Int @default(0)
+  authVersion  Int
+  state        String @db.VarChar(24)
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime
+  consumedAt   DateTime?
+  @@index([expiresAt])
+}
+
+// Platform recovery tokens are intentionally separate from organization AccountToken.
+model SuperAdminPasswordReset {
+  id           String @id @default(cuid())
+  superAdminId String @unique
+  superAdmin   SuperAdmin @relation(fields: [superAdminId], references: [id], onDelete: Cascade)
+  tokenHash    String @unique @db.Char(64)
+  authVersion  Int
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime
+  consumedAt   DateTime?
+
+  @@index([expiresAt])
+}
+
+// Separate immutable actor namespace; legacy AdminAuditEvent remains untouched.
+model SuperAdminAuditEvent {
+  id                String @id @default(cuid())
+  actorSuperAdminId String
+  action            String @db.VarChar(40)
+  outcome           String @db.VarChar(16)
+  reasonCode        String? @db.VarChar(40)
+  createdAt         DateTime @default(now())
+  @@index([actorSuperAdminId, createdAt])
+}
+
+// Append-only through the application. No cascading foreign keys: history
+// remains attributable even after an organization or platform actor is removed.
+model OrganizationAccessAudit {
+  id                String @id @default(cuid())
+  organizationId    String
+  organizationName  String
+  actorSuperAdminId String
+  actorName         String @db.VarChar(120)
+  action            String @db.VarChar(32)
+  outcome           String @db.VarChar(16)
+  reason            String @db.VarChar(500)
+  before            Json?
+  after             Json?
+  requestId         String @db.VarChar(64)
+  requestHash       String @db.Char(64)
+  failureCode       String? @db.VarChar(40)
+  createdAt         DateTime @default(now())
+
+  @@unique([requestId, outcome])
+  @@index([organizationId, createdAt])
+  @@index([actorSuperAdminId, createdAt])
+}
+
+model Session {
+  id          String   @id @default(cuid())
+  tokenHash   String   @unique @db.Char(64)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  authVersion Int      @default(0)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+enum TokenPurpose {
+  VERIFY_EMAIL
+  RESET_PASSWORD
+}
+
+model AccountToken {
+  id          String       @id @default(cuid())
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purpose     TokenPurpose
+  tokenHash   String       @unique @db.Char(64)
+  authVersion Int
+  expiresAt   DateTime
+  consumedAt  DateTime?
+  createdAt   DateTime     @default(now())
+
+  @@unique([userId, purpose])
+  @@index([expiresAt])
+}
+
+enum BillingInterval {
+  MONTHLY
+  YEARLY
+}
+
+model BillingPlan {
+  id             String          @id @db.VarChar(80)
+  name           String          @db.VarChar(80)
+  interval       BillingInterval
+  amountMinor    Int?
+  currency       String          @default("INR") @db.Char(3)
+  providerPlanId String?         @unique @db.VarChar(100)
+  totalCount     Int             @default(12)
+  enabled        Boolean         @default(true)
+  subscriptions  Subscription[]
+}
+
+// Checkpoint before external creation prevents blind retries after a timeout.
+model ProviderPlanProvisioning {
+  reference      String   @id @db.Char(64)
+  state          String   @db.VarChar(20)
+  providerPlanId String?  @unique @db.VarChar(100)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Subscription {
+  id                     String           @id @default(cuid())
+  organizationId         String
+  organization           Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  planId                 String           @db.VarChar(80)
+  plan                   BillingPlan      @relation(fields: [planId], references: [id])
+  providerSubscriptionId String?          @unique @db.VarChar(100)
+  providerPlanId         String           @db.VarChar(100)
+  providerCustomerId     String?          @db.VarChar(100)
+  status                 String           @default("CREATING") @db.VarChar(30)
+  amountMinor            Int
+  currency               String           @db.Char(3)
+  interval               BillingInterval
+  totalCount             Int
+  commercialTerms        Json?
+  creationOperationId    String? @unique @db.VarChar(64)
+  paidUntil              DateTime?
+  currentPeriodStart     DateTime?
+  currentPeriodEnd       DateTime?
+  nextBillingAt          DateTime?
+  cancelAtCycleEnd       Boolean          @default(false)
+  cancelledAt            DateTime?
+  lastSyncedAt           DateTime?
+  syncLeaseOwner         String?          @db.VarChar(64)
+  syncLeaseUntil         DateTime?
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+  payments               BillingPayment[]
+  events                 BillingEvent[]
+
+  @@index([organizationId, createdAt])
+  @@index([providerCustomerId])
+}
+
+model BillingPayment {
+  id                String       @id @default(cuid())
+  subscriptionId    String
+  subscription      Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  providerPaymentId String       @unique @db.VarChar(100)
+  providerInvoiceId String?      @db.VarChar(100)
+  amountMinor       Int
+  currency          String       @db.Char(3)
+  status            String       @db.VarChar(30)
+  paidAt            DateTime?
+  paymentCreatedAt  DateTime?
+  captureVerifiedAt DateTime?
+  paidAtSource      String? @db.VarChar(32)
+  amountRefundedMinor Int @default(0)
+  updatedAt         DateTime @default(now()) @updatedAt
+  createdAt         DateTime     @default(now())
+
+  @@index([subscriptionId, createdAt])
+}
+
+// One operation per old subscription; organization row locking serializes operations.
+// CONFLICT deliberately requires operator review and is never cleared on a timer.
+model BillingReplacement {
+  id String @id @default(cuid())
+  organizationId String
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  fromSubscriptionId String @unique
+  toSubscriptionId String? @unique
+  quoteId String
+  state String @db.VarChar(20)
+  settleAfter DateTime?
+  reason String? @db.VarChar(100)
+  context Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([organizationId, state])
+  @@index([state, updatedAt])
+}
+
+model BillingQuote {
+  id String @id @default(cuid())
+  organizationId String
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationName String @db.VarChar(191)
+  planId String @db.VarChar(80)
+  planName String @db.VarChar(80)
+  providerPlanId String @db.VarChar(100)
+  interval BillingInterval
+  amountMinor Int
+  currency String @db.Char(3)
+  totalCount Int
+  taxNote String @db.VarChar(500)
+  version Int @default(1)
+  subscriptionId String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  @@index([organizationId, createdAt])
+  @@index([expiresAt])
+}
+
+model BillingEvent {
+  id             String       @id @db.VarChar(128)
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  bodyHash       String       @db.Char(64)
+  type           String       @db.VarChar(80)
+  processedAt    DateTime     @default(now())
+
+  @@index([subscriptionId])
+}

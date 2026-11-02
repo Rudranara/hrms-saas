@@ -1,0 +1,474 @@
+.pricing-page {
+  background: #fff;
+}
+.pricing-hero {
+  text-align: center;
+  padding-block: 70px 38px;
+}
+.pricing-hero h1 {
+  font-size: clamp(43px, 4.9vw, 72px);
+  line-height: 1.08;
+  letter-spacing: -2.8px;
+  max-width: 1000px;
+  margin: 25px auto 23px;
+}
+.pricing-hero h1 span {
+  color: var(--primary);
+}
+.pricing-hero > p {
+  font-size: 18px;
+  line-height: 1.8;
+  color: var(--muted);
+  max-width: 800px;
+  margin-inline: auto;
+}
+.pricing-hero-notes {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 16px 28px;
+  margin-top: 27px;
+  color: #596476;
+  font-size: 13px;
+}
+.pricing-hero-notes > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pricing-hero-notes svg {
+  color: #756bb6;
+  width: 18px;
+  height: 18px;
+}
+.pricing-compare-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #4b42c0;
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 25px;
+}
+.pricing-compare-link svg {
+  width: 17px;
+  transform: rotate(90deg);
+}
+.pricing-plans {
+  padding-block: 18px 75px;
+}
+.pricing-plans .plan-price {
+  font-size: clamp(24px, 2.15vw, 31px);
+  letter-spacing: -0.8px;
+}
+.pricing-plans .billing-toggle {
+  margin-top: 0;
+}
+.pricing-policy-note {
+  font-size: 12px;
+  text-align: center;
+  line-height: 1.8;
+  color: #647084;
+  margin-top: 8px;
+}
+.pricing-comparison-section {
+  background: #faf9f6;
+  border-block: 1px solid #e9e6de;
+}
+.pricing-comparison {
+  border: 1px solid #dce0e9;
+  border-radius: 14px;
+  background: #fff;
+  overflow: hidden;
+}
+.pricing-comparison table {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+  text-align: left;
+}
+.pricing-comparison caption {
+  text-align: left;
+  padding: 20px 26px;
+  font-size: 13px;
+  color: #596476;
+  border-bottom: 1px solid #e2e5ec;
+  background: #fff;
+}
+.pricing-comparison thead th {
+  padding: 27px 24px;
+  font-size: 19px;
+  letter-spacing: -0.4px;
+  color: #293449;
+  vertical-align: middle;
+}
+.pricing-comparison th:first-child {
+  width: 34%;
+}
+.pricing-comparison td,
+.pricing-comparison tbody th {
+  border-top: 1px solid #e6e8ef;
+  padding: 22px 24px;
+  font-size: 14px;
+  vertical-align: middle;
+}
+.pricing-comparison tbody th {
+  font-size: 15px;
+  font-weight: 600;
+}
+.pricing-comparison th > span {
+  display: block;
+  font-weight: 400;
+  color: #647084;
+  font-size: 12px;
+  margin-top: 5px;
+  letter-spacing: 0;
+}
+.pricing-comparison .pricing-growth-column {
+  background: #f4f3ff;
+}
+.pricing-proposed {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #4d469c;
+  font-weight: 550;
+}
+.pricing-proposed svg {
+  width: 16px;
+  height: 16px;
+}
+.pricing-unconfirmed {
+  color: #596476;
+}
+.pricing-trial {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 100px;
+  align-items: center;
+}
+.pricing-trial-number {
+  display: block;
+  color: var(--primary);
+  font-size: 70px;
+  font-weight: 650;
+  line-height: 1;
+  letter-spacing: -3px;
+  margin-bottom: 25px;
+}
+.pricing-trial-number > span {
+  display: inline-block;
+  font-size: 14px;
+  letter-spacing: 0;
+  margin-left: 12px;
+  color: #5c5688;
+  font-weight: 500;
+}
+.pricing-trial-intro > p {
+  margin-block: 22px 28px;
+  max-width: 510px;
+  font-size: 17px;
+  line-height: 1.85;
+  color: var(--muted);
+}
+.pricing-trial-details {
+  padding: 12px 32px;
+  background: #f7f6fc;
+  border: 1px solid #e4e1f0;
+  border-radius: 14px;
+}
+.pricing-trial-details article {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  padding-block: 28px;
+}
+.pricing-trial-details article + article {
+  border-top: 1px solid #e2deee;
+}
+.pricing-trial-details article > span {
+  font-size: 13px;
+  font-weight: 600;
+  color: #7265ab;
+  padding-top: 4px;
+}
+.pricing-trial-details h3 {
+  font-size: 20px;
+  letter-spacing: -0.5px;
+}
+.pricing-trial-details p {
+  margin-top: 11px;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.85;
+}
+.pricing-faq {
+  border-top: 1px solid var(--border);
+}
+.pricing-closing-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #eeebff;
+  font-size: 15px;
+}
+.pricing-closing-link svg {
+  width: 17px;
+}
+.pricing-closing {
+  margin-bottom: 0;
+}
+.pricing-page .closing-art {
+  pointer-events: none;
+}
+@media (max-width: 1024px) {
+  .pricing-hero {
+    padding-block: 55px 35px;
+  }
+  .pricing-hero h1 {
+    font-size: clamp(43px, 6vw, 64px);
+  }
+  .pricing-hero > p {
+    font-size: 17px;
+  }
+  .pricing-trial {
+    gap: 45px;
+  }
+  .pricing-trial-details {
+    padding-inline: 25px;
+  }
+  .pricing-comparison thead th {
+    font-size: 17px;
+    padding: 24px 18px;
+  }
+  .pricing-comparison td,
+  .pricing-comparison tbody th {
+    padding: 20px 18px;
+    font-size: 13px;
+  }
+  .pricing-comparison th:first-child {
+    width: 31%;
+  }
+  .pricing-comparison tbody th {
+    font-size: 14px;
+  }
+}
+@media (max-width: 800px) {
+  .pricing-hero {
+    padding-top: 45px;
+  }
+  .pricing-hero h1 {
+    font-size: 52px;
+  }
+  .pricing-trial {
+    grid-template-columns: 1fr;
+    gap: 35px;
+  }
+  .pricing-trial-intro > p {
+    max-width: 650px;
+  }
+  .pricing-plans {
+    padding-bottom: 60px;
+  }
+  .pricing-comparison th:first-child {
+    width: 29%;
+  }
+  .pricing-comparison thead th {
+    font-size: 15px;
+    padding: 20px 12px;
+  }
+  .pricing-comparison td,
+  .pricing-comparison tbody th {
+    padding: 18px 12px;
+    font-size: 12px;
+  }
+  .pricing-comparison th > span {
+    font-size: 12px;
+  }
+  .pricing-comparison .pricing-proposed {
+    gap: 4px;
+  }
+  .pricing-proposed svg {
+    width: 13px;
+    height: 13px;
+  }
+}
+@media (max-width: 540px) {
+  .pricing-hero {
+    padding-block: 36px 28px;
+  }
+  .pricing-hero h1 {
+    font-size: 42px;
+    letter-spacing: -1.8px;
+    line-height: 1.12;
+    margin-block: 22px;
+  }
+  .pricing-hero h1 br {
+    display: none;
+  }
+  .pricing-hero > p {
+    font-size: 16px;
+  }
+  .pricing-desktop-break {
+    display: none;
+  }
+  .pricing-hero-notes {
+    gap: 12px;
+    flex-direction: column;
+    align-items: center;
+    font-size: 13px;
+    margin-top: 22px;
+  }
+  .pricing-compare-link {
+    font-size: 14px;
+    margin-top: 22px;
+  }
+  .pricing-plans {
+    padding-top: 13px;
+  }
+  .pricing-plans .plan-price {
+    font-size: 27px;
+  }
+  .pricing-policy-note {
+    margin-top: 12px;
+  }
+  .pricing-comparison {
+    border-radius: 10px;
+  }
+  .pricing-comparison caption {
+    font-size: 12px;
+    line-height: 1.7;
+    padding: 17px 14px;
+  }
+  .pricing-comparison thead th {
+    font-size: 12px;
+    padding: 18px 6px;
+    overflow-wrap: anywhere;
+    letter-spacing: -0.2px;
+  }
+  .pricing-comparison th:first-child {
+    width: 31%;
+  }
+  .pricing-comparison td,
+  .pricing-comparison tbody th {
+    font-size: 12px;
+    line-height: 1.65;
+    padding: 17px 6px;
+    overflow-wrap: anywhere;
+  }
+  .pricing-comparison th > span {
+    font-size: 12px;
+  }
+  .pricing-comparison thead th > span {
+    display: none;
+  }
+  .pricing-comparison .pricing-proposed {
+    display: inline;
+    font-weight: 550;
+  }
+  .pricing-comparison .pricing-proposed svg {
+    display: none;
+  }
+  .pricing-comparison tbody th > span {
+    display: none;
+  }
+  .pricing-trial-number {
+    font-size: 60px;
+  }
+  .pricing-trial-intro > p {
+    font-size: 16px;
+  }
+  .pricing-trial-intro > .button {
+    width: 100%;
+    font-size: 14px;
+    padding-inline: 14px;
+  }
+  .pricing-trial-details {
+    padding: 4px 23px;
+  }
+  .pricing-trial-details article {
+    gap: 15px;
+    padding-block: 25px;
+  }
+  .pricing-trial-details h3 {
+    font-size: 20px;
+  }
+  .pricing-trial-details p {
+    font-size: 15px;
+  }
+  .pricing-closing-link {
+    font-size: 14px;
+  }
+}
+@media (max-width: 360px) {
+  .pricing-hero h1 {
+    font-size: 37px;
+  }
+  .pricing-hero .pill {
+    font-size: 9px;
+    letter-spacing: 0.5px;
+  }
+  .pricing-plans .plan-price {
+    font-size: 25px;
+  }
+  .pricing-comparison thead th {
+    font-size: 11px;
+  }
+  .pricing-comparison th:first-child {
+    width: 30%;
+  }
+  .pricing-comparison td,
+  .pricing-comparison tbody th {
+    padding-inline: 5px;
+  }
+}
+/* On narrow screens each feature becomes a row of three labeled plan values.
+   The table and its column headers remain available to assistive technology. */
+@media (max-width: 540px) {
+  .pricing-comparison table,
+  .pricing-comparison tbody {
+    display: block;
+  }
+  .pricing-comparison caption {
+    display: block;
+  }
+  .pricing-comparison thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .pricing-comparison tbody tr {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding: 19px 14px;
+    border-top: 1px solid #e6e8ef;
+  }
+  .pricing-comparison tbody th:first-child {
+    grid-column: 1 / -1;
+    width: auto;
+    border: 0;
+    padding: 0 0 15px;
+    font-size: 15px;
+  }
+  .pricing-comparison tbody th > span {
+    display: block;
+  }
+  .pricing-comparison td {
+    border: 0;
+    padding: 10px 6px;
+    border-radius: 5px;
+    font-size: 12px;
+  }
+  .pricing-comparison td::before {
+    content: attr(data-plan);
+    display: block;
+    margin-bottom: 7px;
+    font-size: 11px;
+    font-weight: 650;
+    color: #334155;
+  }
+}

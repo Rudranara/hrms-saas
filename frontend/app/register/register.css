@@ -1,0 +1,68 @@
+.registration-page { padding: 40px 24px; background: #f5f6fa; color: #243047; }
+.registration-page .auth-container { max-width: 1080px; grid-template-columns: .78fr 1.22fr; border: 1px solid #e2e6ee; border-radius: 20px; box-shadow: 0 16px 54px #26304a09; }
+.registration-page .auth-story { position: relative; padding: 36px; gap: 40px; background: linear-gradient(145deg, #242847 0%, #343161 100%); color: #fff; }
+.registration-page .auth-story .brand { color: white; font-size: 25px; letter-spacing: -.03em; }
+.registration-page .auth-story .brand-mark { background: #7567ed; border: 1px solid #ffffff22; box-shadow: 0 4px 12px #11152a1a; }
+.registration-page .auth-story > div { padding: 18px 0; }
+.registration-page .auth-story .eyebrow { color: #b8b4df; font-size: 9px; letter-spacing: .12em; line-height: 1.7; }
+.registration-page .auth-story-title { font-size: clamp(35px, 3.5vw, 45px); font-weight: 600; letter-spacing: -.04em; line-height: 1.15; margin-top: 16px; }
+.registration-page .auth-story-title span { color: #c0b8ff; }
+.registration-page .auth-story > div > p { color: #c5c6d8; font-size: 14px; line-height: 1.85; margin-top: 20px; }
+.registration-page .auth-benefits { margin-top: 28px; gap: 12px; font-size: 12px; color: #e4e3f1; }
+.registration-page .auth-benefits > span { padding: 11px 12px; gap: 10px; border-radius: 8px; background: #ffffff06; border: 1px solid #ffffff0d; line-height: 1.6; }
+.registration-page .auth-benefits svg { flex-shrink: 0; color: #b9afff; }
+.registration-page .auth-back { color: #b9bbd0; font-size: 12px; width: fit-content; }
+.registration-page .auth-back:hover { color: #fff; }
+.registration-page .auth-panel { min-width: 0; padding: 38px 40px 28px; }
+.registration-page .auth-heading .eyebrow { display: inline-block; font-size: 10px; color: #7061bb; font-weight: 700; letter-spacing: .12em; }
+.registration-page .auth-heading h1 { margin-top: 12px; font-size: 29px; line-height: 1.25; letter-spacing: -.035em; color: #253047; }
+.registration-page .auth-heading > p { margin-top: 10px; color: #778095; font-size: 13px; line-height: 1.8; max-width: 480px; }
+.registration-page .auth-form { margin-top: 26px; }
+.registration-page .auth-form > fieldset { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 19px 18px; }
+.registration-page .auth-field { min-width: 0; margin: 0; }
+.registration-page .auth-field-fullName, .registration-page .auth-field-email, .registration-page .auth-field-phoneNumber, .registration-page .auth-submit { grid-column: 1 / -1; }
+.registration-page .auth-field > label { margin-bottom: 7px; font-size: 12px; font-weight: 600; color: #4b566e; }
+.registration-page .auth-field input, .registration-page .auth-field select { min-width: 0; width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid #dce1eb; border-radius: 7px; background: white; font: inherit; color: #28364c; font-size: 14px; box-shadow: 0 1px 2px #25304703; }
+.registration-page .auth-field input[aria-invalid="true"], .registration-page .auth-field select[aria-invalid="true"] { border-color: #b84242; }
+.registration-page .auth-field input:focus-visible, .registration-page .auth-field select:focus-visible, .registration-page .auth-country-trigger:focus-visible { border-color: #8d7fe8; outline: 3px solid #ece8ff; outline-offset: 1px; }
+.registration-page .auth-phone-row { grid-template-columns: 112px minmax(0, 1fr); gap: 10px; }
+.registration-page .auth-country-trigger { min-height: 44px; padding: 10px 8px; border-color: #dce1eb; font-size: 13px; }
+.registration-page .auth-country-picker { box-shadow: 0 12px 32px #1e293b24; }
+.registration-page .auth-field-help { font-size: 11px; line-height: 1.65; color: #8790a1; margin-top: 6px; }
+.registration-page .auth-field-error { font-size: 11px; }
+.registration-page .password-toggle { top: 6px; bottom: 6px; right: 6px; background: #f4f2fc; border-radius: 5px; font-size: 11px; padding: 0 8px; }
+.registration-page .auth-submit { min-height: 46px; border-radius: 8px; padding: 12px 18px; margin-top: 2px; font-size: 13px; font-weight: 600; background: #5947d8; box-shadow: 0 4px 9px #5947d81c; }
+.registration-page .auth-submit:hover { background: #4938c0; }
+.registration-page .auth-submit svg { width: 16px; height: 16px; }
+.registration-page .auth-switch { margin-top: 20px; font-size: 12px; color: #818a9b; }
+.registration-page .auth-switch a { color: #6450c4; }
+.registration-page .auth-disclosure { margin-top: 22px; padding-top: 16px; font-size: 10px; color: #9199a8; line-height: 1.8; border-color: #eef0f5; }
+.registration-page .auth-form > h2 { color: #28364c; font-size: 22px; letter-spacing: -.025em; margin-bottom: 10px; }
+.registration-page .auth-form > fieldset > .auth-field:has(#registration-code) { grid-column: 1 / -1; }
+.registration-page #registration-code { max-width: 240px; font-size: 23px; letter-spacing: .3em; text-align: center; min-height: 56px; }
+.registration-page .button-link { font-size: 12px; }
+.registration-page .button-link:disabled { color: #8c94a4; cursor: default; text-decoration: none; }
+.registration-page .auth-alert { font-size: 12px; }
+.registration-page .account-success { padding: 12px; border: 1px solid #cbe5da; border-radius: 7px; color: #287252; background: #f2faf6; font-size: 12px; line-height: 1.7; margin-top: 14px; }
+@media (max-width: 900px) {
+  .registration-page .auth-container { grid-template-columns: .7fr 1.3fr; }
+  .registration-page .auth-story { padding: 28px; }
+  .registration-page .auth-story-title { font-size: 36px; }
+  .registration-page .auth-panel { padding: 32px 28px 24px; }
+  .registration-page .auth-form > fieldset { grid-template-columns: minmax(0, 1fr); gap: 17px; }
+}
+@media (max-width: 680px) {
+  .registration-page { padding: 20px 14px; }
+  .registration-page .auth-container { grid-template-columns: minmax(0, 1fr); border-radius: 14px; }
+  .registration-page .auth-story { padding: 20px 22px; flex-direction: row; align-items: center; gap: 16px; }
+  .registration-page .auth-story > div { display: none; }
+  .registration-page .auth-story .brand { font-size: 23px; }
+  .registration-page .auth-back { font-size: 0; gap: 0; padding: 8px; border-radius: 7px; background: #ffffff0c; }
+  .registration-page .auth-back svg { width: 18px; height: 18px; }
+  .registration-page .auth-panel { padding: 28px 22px 24px; }
+  .registration-page .auth-heading h1 { font-size: 27px; }
+  .registration-page .auth-field input, .registration-page .auth-field select { font-size: 16px; }
+  .registration-page .auth-phone-row { grid-template-columns: 108px minmax(0, 1fr); gap: 8px; }
+  .registration-page .auth-country-trigger { min-height: 46px; }
+  .registration-page .auth-country-picker { width: min(320px, calc(100vw - 76px)); }
+}
